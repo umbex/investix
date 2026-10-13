@@ -1,4 +1,6 @@
 import { AppShell, Badge, Button, Card, Group, MantineProvider, SimpleGrid, Stack, Text, Title } from "@mantine/core";
+import * as echarts from "echarts";
+import { useEffect, useRef } from "react";
 
 import "./styles.css";
 
@@ -27,7 +29,7 @@ export function App() {
             <SimpleGrid cols={{ base: 1, md: 3 }} spacing="md">
               <Card withBorder radius="md" className="chart-card" style={{ gridColumn: "span 2" }}>
                 <Group justify="space-between"><Title order={3}>Valore nel tempo</Title><Badge variant="outline">EUR</Badge></Group>
-                <div className="chart" role="img" aria-label="Grafico del valore del portafoglio, in attesa di dati importati"><svg viewBox="0 0 600 180" preserveAspectRatio="none"><polyline points="0,150 80,130 150,142 235,95 330,108 410,66 500,78 600,30" /></svg></div>
+                <PortfolioChart />
                 <Text size="xs" c="dimmed">Il grafico usa solo osservazioni persistite; nessun dato live è mostrato come storico.</Text>
               </Card>
               <Card withBorder radius="md"><Title order={3}>Stato dati</Title><Stack mt="md" gap="sm"><Status label="Import STOCKS-26" value="In preparazione" /><Status label="Provider prezzi" value="CSV manuale" /><Status label="Ultima quotazione" value="Non disponibile" /></Stack></Card>
@@ -46,4 +48,21 @@ function Metric({ label, value, note, positive = false }: { label: string; value
 
 function Status({ label, value }: { label: string; value: string }) {
   return <Group justify="space-between" wrap="nowrap"><Text size="sm">{label}</Text><Text size="sm" c="dimmed">{value}</Text></Group>;
+}
+
+function PortfolioChart() {
+  const element = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!element.current) return;
+    const chart = echarts.init(element.current, undefined, { renderer: "svg" });
+    chart.setOption({
+      xAxis: { show: false }, yAxis: { show: false },
+      series: [],
+      graphic: { type: "text", left: "center", top: "middle", style: { text: "Nessuna serie storica disponibile", fill: "#9097a6", fontSize: 14 } },
+    });
+    const resize = () => chart.resize();
+    window.addEventListener("resize", resize);
+    return () => { window.removeEventListener("resize", resize); chart.dispose(); };
+  }, []);
+  return <div className="chart" ref={element} role="img" aria-label="Grafico del valore del portafoglio: nessuna serie storica disponibile" />;
 }

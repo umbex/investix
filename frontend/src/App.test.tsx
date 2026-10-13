@@ -1,5 +1,9 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+vi.mock("echarts", () => ({
+  init: () => ({ setOption: vi.fn(), resize: vi.fn(), dispose: vi.fn() }),
+}));
 
 import { App } from "./App";
 

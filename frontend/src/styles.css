@@ -6,5 +6,4 @@
 .positive { color: #3ddc97; }
 .chart-card { min-width: 0; }
 .chart { height: 200px; margin: 18px 0 8px; background: linear-gradient(180deg, rgba(34, 211, 238, .12), transparent); border-radius: 8px; overflow: hidden; }
-.chart svg { width: 100%; height: 100%; }.chart polyline { fill: none; stroke: #22d3ee; stroke-width: 4; vector-effect: non-scaling-stroke; }
 @media (max-width: 390px) { .dashboard { padding-inline: 0; } .dashboard-title { align-items: flex-start; } .dashboard-title > :last-child { max-width: 150px; text-align: right; } .positions { margin-inline: -4px; } }
