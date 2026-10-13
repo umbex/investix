@@ -13,10 +13,11 @@ from app.providers.base import MarketObservation, ProviderError, normalize_obser
 class TwelveDataAdapter:
     provider_name = "twelve-data"
 
-    def __init__(self, *, api_key: str, download: Callable[[str], str] | None = None) -> None:
+    def __init__(self, *, api_key: str, fx_to_eur: Callable[[datetime], Decimal] | None = None, download: Callable[[str], str] | None = None) -> None:
         if not api_key:
             raise ValueError("INVESTIX_TWELVE_DATA_API_KEY non configurata")
         self.api_key = api_key
+        self._fx_to_eur = fx_to_eur
         self._download = download or _download
 
     def fetch_latest(self, symbol: str) -> MarketObservation:
@@ -33,7 +34,14 @@ class TwelveDataAdapter:
         try:
             meta, value = payload["meta"], payload["values"][0]
             observed_at = datetime.fromisoformat(value["datetime"]).replace(tzinfo=timezone.utc)
-            return normalize_observation(provider=self.provider_name, ticker=symbol, observed_at=observed_at, raw_price=Decimal(value["close"]), currency=meta["currency"], fx_to_eur=Decimal("1") if meta["currency"].upper() == "EUR" else Decimal("1"))
+            currency = meta["currency"].upper()
+            if currency == "EUR":
+                fx_to_eur = Decimal("1")
+            elif self._fx_to_eur is None:
+                raise ProviderError(f"Manca il cambio storico {currency}/EUR per {observed_at.date().isoformat()}")
+            else:
+                fx_to_eur = self._fx_to_eur(observed_at)
+            return normalize_observation(provider=self.provider_name, ticker=symbol, observed_at=observed_at, raw_price=Decimal(value["close"]), currency=currency, fx_to_eur=fx_to_eur)
         except (KeyError, IndexError, ValueError, InvalidOperation) as error:
             raise ProviderError(f"Risposta Twelve Data non valida: {error}") from error
 

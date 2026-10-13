@@ -30,3 +30,12 @@ def test_twelve_data_reports_unknown_symbols_and_rate_limits() -> None:
     with pytest.raises(ProviderError, match="crediti") as error:
         limited.fetch_latest("EQQQ.MI")
     assert error.value.retryable is True
+
+
+def test_twelve_data_requires_an_explicit_historical_fx_rate_for_non_eur_quotes() -> None:
+    payload = '{"meta":{"symbol":"QQQ","exchange":"NASDAQ","currency":"USD"},"values":[{"datetime":"2026-10-12","close":"500"}]}'
+
+    with pytest.raises(ProviderError, match="cambio"):
+        TwelveDataAdapter(api_key="test-key", download=lambda _: payload).fetch_latest("QQQ")
+    quote = TwelveDataAdapter(api_key="test-key", fx_to_eur=lambda _: Decimal("0.9"), download=lambda _: payload).fetch_latest("QQQ")
+    assert quote.normalized_price_eur == Decimal("450.0")
