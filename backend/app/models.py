@@ -28,6 +28,9 @@ class Instrument(Identified):
     __tablename__ = "instruments"
     ticker: Mapped[str] = mapped_column(String(64), unique=True)
     isin: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    quote_symbol: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    quote_venue: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    quote_currency: Mapped[str | None] = mapped_column(String(8), nullable=True)
 
 
 class Operation(Identified):
