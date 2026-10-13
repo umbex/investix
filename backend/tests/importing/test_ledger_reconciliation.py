@@ -23,6 +23,9 @@ def test_reconciliation_reports_matching_quantity_and_historical_coverage() -> N
     assert report.quantity_status == "matched"
     assert report.cost_status == "matched"
     assert report.realized_pnl_status == "matched"
+    assert report.average_cost_status == "matched"
+    assert report.reference_average_cost_eur == {"VWCE|Directa": Decimal("100")}
+    assert report.coverage["dividends"] == "not_comparable"
     assert report.passed is True
     assert report.reference_quantities == {"VWCE|Directa": Decimal("2")}
     assert report.ledger_quantities == {"VWCE|Directa": Decimal("2")}

@@ -26,10 +26,14 @@ class LedgerReconciliation:
     realized_pnl_status: str = "matched"
     differences: dict[str, tuple[Decimal, Decimal]] = field(default_factory=dict)
     tolerance: ReconciliationTolerance = ReconciliationTolerance()
+    reference_average_cost_eur: dict[str, Decimal] = field(default_factory=dict)
+    ledger_average_cost_eur: dict[str, Decimal] = field(default_factory=dict)
+    average_cost_status: str = "matched"
+    coverage: dict[str, str] = field(default_factory=lambda: {"dividends": "not_comparable", "benchmarks": "not_comparable"})
 
     @property
     def passed(self) -> bool:
-        return self.quantity_status == "matched" and self.cost_status == "matched" and self.realized_pnl_status == "matched"
+        return self.quantity_status == "matched" and self.cost_status == "matched" and self.realized_pnl_status == "matched" and self.average_cost_status == "matched"
 
     def as_dict(self) -> dict:
         return {
@@ -43,9 +47,13 @@ class LedgerReconciliation:
             "ledger_cost_eur": _serialize(self.ledger_cost_eur),
             "reference_realized_pnl_eur": _serialize(self.reference_realized_pnl_eur),
             "ledger_realized_pnl_eur": _serialize(self.ledger_realized_pnl_eur),
+            "reference_average_cost_eur": _serialize(self.reference_average_cost_eur),
+            "ledger_average_cost_eur": _serialize(self.ledger_average_cost_eur),
             "quantity_status": self.quantity_status,
             "cost_status": self.cost_status,
             "realized_pnl_status": self.realized_pnl_status,
+            "average_cost_status": self.average_cost_status,
+            "coverage": self.coverage,
             "differences": {key: {"imported": str(values[0]), "reference": str(values[1])} for key, values in self.differences.items()},
         }
 
@@ -78,16 +86,29 @@ def reconcile_preview_with_ledger(session: Session, preview: ImportPreview) -> L
     cost_ledger = _metric(ledger_operations, "open_cost_eur")
     pnl_reference = _metric(reference_operations, "realized_pnl_eur")
     pnl_ledger = _metric(ledger_operations, "realized_pnl_eur")
+    average_reference = _average_cost(cost_reference, reference_quantities)
+    average_ledger = _average_cost(cost_ledger, ledger_quantities)
     tolerance = ReconciliationTolerance()
     differences = dict(quantity_differences)
     differences.update({f"cost_eur|{key}": values for key, values in _differences(cost_ledger, cost_reference, tolerance.cost_eur).items()})
     differences.update({f"realized_pnl_eur|{key}": values for key, values in _differences(pnl_ledger, pnl_reference, tolerance.realized_pnl_eur).items()})
+    average_differences = _differences(average_ledger, average_reference, tolerance.cost_eur)
+    differences.update({f"average_cost_eur|{key}": values for key, values in average_differences.items()})
     return LedgerReconciliation(
-        reference_quantities, ledger_quantities, "matched" if not quantity_differences else "mismatch",
-        cost_reference, cost_ledger, pnl_reference, pnl_ledger,
-        "matched" if not _differences(cost_ledger, cost_reference, tolerance.cost_eur) else "mismatch",
-        "matched" if not _differences(pnl_ledger, pnl_reference, tolerance.realized_pnl_eur) else "mismatch",
-        differences, tolerance,
+        reference_quantities=reference_quantities,
+        ledger_quantities=ledger_quantities,
+        quantity_status="matched" if not quantity_differences else "mismatch",
+        reference_cost_eur=cost_reference,
+        ledger_cost_eur=cost_ledger,
+        reference_realized_pnl_eur=pnl_reference,
+        ledger_realized_pnl_eur=pnl_ledger,
+        cost_status="matched" if not _differences(cost_ledger, cost_reference, tolerance.cost_eur) else "mismatch",
+        realized_pnl_status="matched" if not _differences(pnl_ledger, pnl_reference, tolerance.realized_pnl_eur) else "mismatch",
+        differences=differences,
+        tolerance=tolerance,
+        reference_average_cost_eur=average_reference,
+        ledger_average_cost_eur=average_ledger,
+        average_cost_status="matched" if not average_differences else "mismatch",
     )
 
 
@@ -119,3 +140,7 @@ def _differences(actual: dict[str, Decimal], expected: dict[str, Decimal], toler
 
 def _serialize(values: dict[str, Decimal]) -> dict[str, str]:
     return {key: str(value) for key, value in values.items()}
+
+
+def _average_cost(costs: dict[str, Decimal], quantities: dict[str, Decimal]) -> dict[str, Decimal]:
+    return {key: cost / quantities[key] for key, cost in costs.items() if quantities.get(key, Decimal("0")) != 0}
