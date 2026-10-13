@@ -9,6 +9,7 @@ from pydantic import ValidationError
 
 def test_portfolio_requires_authenticated_session(monkeypatch) -> None:
     monkeypatch.setenv("INVESTIX_ADMIN_PASSWORD", "test-password")
+    monkeypatch.setenv("INVESTIX_SESSION_SECRET", "test-session-secret-with-at-least-32chars")
     get_settings.cache_clear()
     response = TestClient(create_app()).get("/api/portfolio")
 
@@ -17,6 +18,7 @@ def test_portfolio_requires_authenticated_session(monkeypatch) -> None:
 
 def test_configured_credentials_create_a_session(monkeypatch) -> None:
     monkeypatch.setenv("INVESTIX_ADMIN_PASSWORD", "test-password")
+    monkeypatch.setenv("INVESTIX_SESSION_SECRET", "test-session-secret-with-at-least-32chars")
     get_settings.cache_clear()
     response = TestClient(create_app()).post(
         "/api/auth/login",

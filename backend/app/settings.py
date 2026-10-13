@@ -16,8 +16,8 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def production_requires_a_session_secret(self) -> "Settings":
-        if self.environment != "development" and (self.session_secret is None or len(self.session_secret) < 32):
-            raise ValueError("INVESTIX_SESSION_SECRET must contain at least 32 characters outside development")
+        if self.session_secret is None or len(self.session_secret) < 32:
+            raise ValueError("INVESTIX_SESSION_SECRET must contain at least 32 characters")
         return self
 
 

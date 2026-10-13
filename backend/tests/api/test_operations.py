@@ -14,6 +14,7 @@ from app.settings import get_settings
 
 def client_with_database(monkeypatch) -> TestClient:
     monkeypatch.setenv("INVESTIX_ADMIN_PASSWORD", "test-password")
+    monkeypatch.setenv("INVESTIX_SESSION_SECRET", "test-session-secret-with-at-least-32chars")
     get_settings.cache_clear()
     engine = create_engine(
         "sqlite+pysqlite://",
