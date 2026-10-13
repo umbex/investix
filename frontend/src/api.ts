@@ -14,6 +14,7 @@ export type Position = {
   market_value_eur: string | null;
   unrealized_pnl_eur: string | null;
   market_data_status: "available" | "missing";
+  last_observed_at: string | null;
   accounts: AccountPosition[];
 };
 
