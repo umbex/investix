@@ -29,6 +29,7 @@ def test_dashboard_summary_exposes_account_breakdown_and_unavailable_valuation(m
     assert Decimal(position["quantity"]) == Decimal("3")
     assert {item["name"] for item in position["accounts"]} == {"Directa", "Fineco"}
     assert position["market_data_status"] == "missing"
+    assert position["market_data_provider"] is None
 
 
 def test_portfolio_csv_uses_same_filtered_positions(monkeypatch) -> None:
