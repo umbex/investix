@@ -32,3 +32,11 @@ def test_configured_credentials_create_a_session(monkeypatch) -> None:
 def test_production_rejects_missing_or_short_session_secret() -> None:
     with pytest.raises(ValidationError, match="INVESTIX_SESSION_SECRET"):
         Settings(environment="production", session_secret="short")
+
+
+def test_settings_ignores_docker_only_environment_variables(monkeypatch) -> None:
+    monkeypatch.setenv("POSTGRES_DB", "investix")
+
+    settings = Settings(session_secret="test-session-secret-with-at-least-32chars")
+
+    assert settings.database_url.startswith("postgresql+")

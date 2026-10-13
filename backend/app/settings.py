@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     admin_username: str = "investix"
     admin_password: str | None = None
 
-    model_config = SettingsConfigDict(env_file=".env", env_prefix="INVESTIX_")
+    model_config = SettingsConfigDict(env_file=".env", env_prefix="INVESTIX_", extra="ignore")
 
     @model_validator(mode="after")
     def production_requires_a_session_secret(self) -> "Settings":

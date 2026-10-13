@@ -46,3 +46,11 @@ def test_import_accepts_italian_quantity_and_eur_price(tmp_path: Path) -> None:
     row = preview_movimenti(export).rows[0]
     assert row.quantity == Decimal("80")
     assert row.unit_price_eur == Decimal("634.42")
+
+
+def test_import_accepts_actual_title_case_headers(tmp_path: Path) -> None:
+    export = tmp_path / "movimenti.csv"
+    header = "Data,Conto,Ticker,ISIN,Tipo,Quantità,Prezzo EUR,Commissioni EUR,Importo movimento EUR,Controvalore EUR,Flusso operazione EUR,Note,SIMBOLO QUOTA,VALUTA QUOTA\n"
+    export.write_text(header + "02/01/2026,Directa,VWCE,,Acquisto,2,100,,,,,,VWCE,EUR\n")
+
+    assert preview_movimenti(export).valid_rows == 1

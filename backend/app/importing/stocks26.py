@@ -40,19 +40,23 @@ def preview_movimenti(source: Path) -> ImportPreview:
     with source.open(newline="", encoding="utf-8") as handle:
         reader = csv.DictReader(handle)
         required = {"DATA", "CONTO", "TICKER", "TIPO", "QUANTITÀ", "PREZZO EUR", "SIMBOLO QUOTA", "VALUTA QUOTA"}
-        if not reader.fieldnames or not required.issubset(reader.fieldnames):
+        if not reader.fieldnames:
+            return ImportPreview(hashlib.sha256(raw).hexdigest(), [], ["Intestazioni MOVIMENTI non corrispondenti allo schema M:N"])
+        headers = {header.upper(): header for header in reader.fieldnames}
+        if not required.issubset(headers):
             return ImportPreview(hashlib.sha256(raw).hexdigest(), [], ["Intestazioni MOVIMENTI non corrispondenti allo schema M:N"])
         for source_row, row in enumerate(reader, start=5):
             try:
-                if row["TIPO"] not in SUPPORTED_TYPES:
-                    raise ValueError(f"tipo non mappato: {row['TIPO']}")
-                if any("#" in (row[key] or "") for key in ("QUANTITÀ", "PREZZO EUR")):
+                values = {key: row[header] or "" for key, header in headers.items()}
+                if values["TIPO"] not in SUPPORTED_TYPES:
+                    raise ValueError(f"tipo non mappato: {values['TIPO']}")
+                if any("#" in values[key] for key in ("QUANTITÀ", "PREZZO EUR")):
                     raise ValueError("formula o errore non importabile")
-                quantity = _parse_decimal(row["QUANTITÀ"])
-                price = _parse_decimal(row["PREZZO EUR"])
-                if quantity <= 0 or price < 0 or not row["TICKER"] or not row["CONTO"]:
+                quantity = _parse_decimal(values["QUANTITÀ"])
+                price = _parse_decimal(values["PREZZO EUR"])
+                if quantity <= 0 or price < 0 or not values["TICKER"] or not values["CONTO"]:
                     raise ValueError("riga incompleta o quantità/prezzo invalidi")
-                rows.append(StagedRow(source_row, _parse_date(row["DATA"]), row["CONTO"], row["TICKER"].upper(), SUPPORTED_TYPES[row["TIPO"]], quantity, price, row["SIMBOLO QUOTA"], row["VALUTA QUOTA"].upper()))
+                rows.append(StagedRow(source_row, _parse_date(values["DATA"]), values["CONTO"], values["TICKER"].upper(), SUPPORTED_TYPES[values["TIPO"]], quantity, price, values["SIMBOLO QUOTA"], values["VALUTA QUOTA"].upper()))
             except (InvalidOperation, ValueError) as error:
                 errors.append(f"Riga {source_row}: {error}")
     return ImportPreview(hashlib.sha256(raw).hexdigest(), rows, errors)
