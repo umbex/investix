@@ -1,84 +1,69 @@
-import { AppShell, Badge, Button, Card, Group, MantineProvider, PasswordInput, SimpleGrid, Stack, Text, TextInput, Title } from "@mantine/core";
+import { AppShell, Badge, Button, Card, Group, Loader, MantineProvider, NumberInput, Select, SimpleGrid, Stack, Table, Text, TextInput, Title } from "@mantine/core";
 import { FormEvent, useEffect, useRef, useState } from "react";
 
+import { api, type Operation, type PortfolioSummary } from "./api";
 import "./styles.css";
+
+const euro = new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR", maximumFractionDigits: 2 });
+const amount = (value: string | null | undefined) => value == null ? "N/D" : euro.format(Number(value));
 
 export function App() {
   const [authenticated, setAuthenticated] = useState(false);
+  const [page, setPage] = useState<"dashboard" | "operations">("dashboard");
   if (!authenticated) return <MantineProvider defaultColorScheme="dark"><Login onAuthenticated={() => setAuthenticated(true)} /></MantineProvider>;
-  return (
-    <MantineProvider defaultColorScheme="dark">
-      <AppShell header={{ height: 64 }} padding="md" className="investix-shell">
-        <AppShell.Header px="md" py="sm" className="topbar">
-          <Group justify="space-between">
-            <Group gap="xs"><Title order={1} size="h3">Investix</Title><Badge color="cyan" variant="light">Privato</Badge></Group>
-            <Button variant="light" size="xs">Aggiorna</Button>
-          </Group>
-        </AppShell.Header>
-        <AppShell.Main>
-          <Stack gap="lg" className="dashboard">
-            <Group justify="space-between" align="end" className="dashboard-title">
-              <div><Text c="dimmed">Portafoglio privato</Text><Title order={2}>Panoramica</Title></div>
-              <Text size="sm" c="dimmed">Dati EOD · ultimo aggiornamento: non disponibile</Text>
-            </Group>
-            <SimpleGrid cols={{ base: 1, xs: 2, md: 4 }} spacing="md">
-              <Metric label="Valore portafoglio" value="—" note="Importazione richiesta" />
-              <Metric label="P&L totale" value="—" note="Nessuna posizione valorizzata" />
-              <Metric label="Rendimento TWR" value="N/D" note="Serie storica non disponibile" />
-              <Metric label="Copertura dati" value="Da importare" note="Quotazioni storiche" />
-            </SimpleGrid>
-            <SimpleGrid cols={{ base: 1, md: 3 }} spacing="md">
-              <Card withBorder radius="md" className="chart-card" style={{ gridColumn: "span 2" }}>
-                <Group justify="space-between"><Title order={3}>Valore nel tempo</Title><Badge variant="outline">EUR</Badge></Group>
-                <PortfolioChart />
-                <Text size="xs" c="dimmed">Il grafico usa solo osservazioni persistite; nessun dato live è mostrato come storico.</Text>
-              </Card>
-              <Card withBorder radius="md"><Title order={3}>Stato dati</Title><Stack mt="md" gap="sm"><Status label="Import STOCKS-26" value="In preparazione" /><Status label="Provider prezzi" value="CSV manuale" /><Status label="Ultima quotazione" value="Non disponibile" /></Stack></Card>
-            </SimpleGrid>
-              <Card withBorder radius="md" className="positions"><Group justify="space-between"><Title order={3}>Posizioni</Title><Button variant="subtle" size="xs">Registro operazioni</Button></Group><Text c="dimmed" mt="md">Nessuna posizione disponibile: importa prima un export STOCKS-26 validato.</Text></Card>
-          </Stack>
-        </AppShell.Main>
-      </AppShell>
-    </MantineProvider>
-  );
+  return <MantineProvider defaultColorScheme="dark"><AppShell header={{ height: 64 }} padding="md" className="investix-shell">
+    <AppShell.Header px="md" py="sm" className="topbar"><Group justify="space-between"><Group gap="xs"><Title order={1} size="h3">Investix</Title><Badge color="cyan" variant="light">Privato</Badge></Group><Group gap="xs"><Button variant={page === "dashboard" ? "light" : "subtle"} size="xs" onClick={() => setPage("dashboard")}>Panoramica</Button><Button variant={page === "operations" ? "light" : "subtle"} size="xs" onClick={() => setPage("operations")}>Registro</Button></Group></Group></AppShell.Header>
+    <AppShell.Main>{page === "dashboard" ? <Dashboard onOpenRegistry={() => setPage("operations")} /> : <Operations />}</AppShell.Main>
+  </AppShell></MantineProvider>;
 }
 
 function Login({ onAuthenticated }: { onAuthenticated: () => void }) {
   const [error, setError] = useState("");
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); const form = new FormData(event.currentTarget);
-    const response = await fetch("http://127.0.0.1:8000/api/auth/login", { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ username: form.get("username"), password: form.get("password") }) });
-    if (response.ok) onAuthenticated(); else setError("Credenziali non valide o API non disponibile");
+    try { await api.login(String(form.get("username")), String(form.get("password"))); onAuthenticated(); } catch { setError("Credenziali non valide o API non disponibile"); }
   }
-  return <main className="login"><Card withBorder radius="md" p="xl"><Title order={1}>Investix</Title><Text c="dimmed" mb="lg">Accesso privato</Text><form onSubmit={submit}><Stack><TextInput name="username" label="Utente" required autoComplete="username" /><PasswordInput name="password" label="Password" required autoComplete="current-password" />{error && <Text c="red" size="sm">{error}</Text>}<Button type="submit">Accedi</Button></Stack></form></Card></main>;
+  return <main className="login"><Card withBorder radius="md" p="xl"><Title order={1}>Investix</Title><Text c="dimmed" mb="lg">Accesso privato</Text><form onSubmit={submit}><Stack><TextInput name="username" label="Utente" required autoComplete="username" /><TextInput name="password" type="password" label="Password" required autoComplete="current-password" />{error && <Text c="red" size="sm">{error}</Text>}<Button type="submit">Accedi</Button></Stack></form></Card></main>;
 }
 
-function Metric({ label, value, note, positive = false }: { label: string; value: string; note: string; positive?: boolean }) {
-  return <Card withBorder radius="md"><Text size="sm" c="dimmed">{label}</Text><Text className={positive ? "positive metric" : "metric"}>{value}</Text><Text size="xs" c="dimmed">{note}</Text></Card>;
+function Dashboard({ onOpenRegistry }: { onOpenRegistry: () => void }) {
+  const [summary, setSummary] = useState<PortfolioSummary>();
+  const [ticker, setTicker] = useState("");
+  const [error, setError] = useState("");
+  const load = async (filter = ticker) => { setError(""); try { setSummary(await api.portfolio(filter || undefined)); } catch (reason) { setError(reason instanceof Error ? reason.message : "Dati non disponibili"); } };
+  useEffect(() => { void load(""); }, []);
+  const positions = summary?.positions ?? [];
+  return <Stack gap="lg" className="dashboard">
+    <Group justify="space-between" align="end" className="dashboard-title"><div><Text c="dimmed">Portafoglio privato</Text><Title order={2}>Panoramica</Title></div><Badge color={summary?.valuation_status === "available" ? "teal" : "yellow"}>{summary?.valuation_status === "available" ? "Quotazioni disponibili" : "Quotazioni mancanti"}</Badge></Group>
+    <Group className="filter-bar" align="end"><TextInput label="Filtra per ticker" placeholder="es. VWCE" value={ticker} onChange={(event) => setTicker(event.currentTarget.value.toUpperCase())} /><Button onClick={() => void load()}>Applica</Button><Button variant="subtle" onClick={() => { setTicker(""); void load(""); }}>Azzera</Button><Button component="a" variant="light" href={api.exportUrl(ticker || undefined)} download>Esporta CSV</Button></Group>
+    {error && <Card withBorder><Text c="red">{error}</Text><Button mt="sm" size="xs" onClick={() => void load()}>Riprova</Button></Card>}
+    {!summary && !error ? <Group justify="center" py="xl"><Loader aria-label="Caricamento portafoglio" /></Group> : <><SimpleGrid cols={{ base: 1, xs: 2, md: 4 }} spacing="md"><Metric label="Valore portafoglio" value={amount(summary?.kpis.market_value_eur)} note={summary?.valuation_status === "available" ? "Ultima osservazione persistita" : "Quotazioni mancanti"} /><Metric label="Capitale aperto" value={amount(summary?.kpis.open_cost_eur)} note="Costo ricostruito dal ledger" /><Metric label="P&L realizzato" value={amount(summary?.kpis.realized_pnl_eur)} note="Vendite registrate" positive={Number(summary?.kpis.realized_pnl_eur) > 0} /><Metric label="P&L non realizzato" value={amount(summary?.kpis.unrealized_pnl_eur)} note="Disponibile con quotazioni EOD" positive={Number(summary?.kpis.unrealized_pnl_eur) > 0} /></SimpleGrid>
+      <SimpleGrid cols={{ base: 1, md: 3 }} spacing="md"><Card withBorder radius="md" className="chart-card" style={{ gridColumn: "span 2" }}><Group justify="space-between"><Title order={3}>Valore nel tempo</Title><Badge variant="outline">EUR</Badge></Group><PortfolioChart /><Text size="xs" c="dimmed">Le serie storiche appariranno solo dopo l’import di osservazioni valide.</Text></Card><Card withBorder radius="md"><Title order={3}>Stato dati</Title><Stack mt="md" gap="sm"><Status label="Ledger" value={String(positions.length) + " strumenti"} /><Status label="Provider prezzi" value="Non configurato" /><Status label="Ultima quotazione" value={summary?.valuation_status === "available" ? "Disponibile" : "Non disponibile"} /></Stack></Card></SimpleGrid>
+      <Card withBorder radius="md" className="positions"><Group justify="space-between"><Title order={3}>Posizioni</Title><Button variant="subtle" size="xs" onClick={onOpenRegistry}>Registro operazioni</Button></Group><PositionTable positions={positions} /></Card></>}
+  </Stack>;
 }
 
-function Status({ label, value }: { label: string; value: string }) {
-  return <Group justify="space-between" wrap="nowrap"><Text size="sm">{label}</Text><Text size="sm" c="dimmed">{value}</Text></Group>;
+function PositionTable({ positions }: { positions: PortfolioSummary["positions"] }) {
+  if (!positions.length) return <Text c="dimmed" mt="md">Nessuna posizione per il filtro selezionato.</Text>;
+  return <Table.ScrollContainer minWidth={680}><Table mt="md" striped highlightOnHover><Table.Thead><Table.Tr><Table.Th>Strumento</Table.Th><Table.Th>Quantità</Table.Th><Table.Th>Costo EUR</Table.Th><Table.Th>Valore</Table.Th><Table.Th>P&L realizzato</Table.Th><Table.Th>Stato</Table.Th></Table.Tr></Table.Thead><Table.Tbody>{positions.map((position) => <Table.Tr key={position.ticker}><Table.Td><Text fw={600}>{position.ticker}</Text><Text size="xs" c="dimmed">{position.accounts.map((item) => item.name).join(" · ")}</Text></Table.Td><Table.Td>{Number(position.quantity).toLocaleString("it-IT")}</Table.Td><Table.Td>{amount(position.open_cost_eur)}</Table.Td><Table.Td>{amount(position.market_value_eur)}</Table.Td><Table.Td>{amount(position.realized_pnl_eur)}</Table.Td><Table.Td><Badge color={position.market_data_status === "available" ? "teal" : "yellow"}>{position.market_data_status === "available" ? "EOD" : "Mancante"}</Badge></Table.Td></Table.Tr>)}</Table.Tbody></Table></Table.ScrollContainer>;
 }
 
+function Operations() {
+  const [items, setItems] = useState<Operation[]>([]);
+  const [error, setError] = useState("");
+  const load = async () => { try { setItems((await api.operations()).items); } catch (reason) { setError(reason instanceof Error ? reason.message : "Registro non disponibile"); } };
+  useEffect(() => { void load(); }, []);
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault(); const values = new FormData(event.currentTarget);
+    try { await api.createOperation({ account_name: values.get("account"), ticker: values.get("ticker"), kind: values.get("kind"), quantity: values.get("quantity"), unit_price_eur: values.get("price"), trade_date: values.get("date"), source_order: 0 }); event.currentTarget.reset(); await load(); } catch (reason) { setError(reason instanceof Error ? reason.message : "Impossibile registrare il movimento"); }
+  }
+  return <Stack gap="lg" className="dashboard"><div><Text c="dimmed">Ledger con audit</Text><Title order={2}>Registro operazioni</Title></div><Card withBorder><form onSubmit={submit}><SimpleGrid cols={{ base: 1, sm: 2, md: 3 }}><TextInput required name="account" label="Account" /><TextInput required name="ticker" label="Ticker" /><Select required name="kind" label="Tipo" data={[{ value: "BUY", label: "Acquisto" }, { value: "SELL", label: "Vendita" }, { value: "DIVIDEND", label: "Dividendo" }, { value: "FEE", label: "Commissione" }]} /><NumberInput required name="quantity" label="Quantità" min={0} decimalScale={6} /><NumberInput required name="price" label="Prezzo EUR" min={0} decimalScale={4} /><TextInput required name="date" type="date" label="Data" defaultValue={new Date().toISOString().slice(0, 10)} /></SimpleGrid><Button mt="md" type="submit">Registra movimento</Button></form></Card>{error && <Text c="red">{error}</Text>}<Card withBorder><Table.ScrollContainer minWidth={720}><Table><Table.Thead><Table.Tr><Table.Th>Data</Table.Th><Table.Th>Account</Table.Th><Table.Th>Ticker</Table.Th><Table.Th>Tipo</Table.Th><Table.Th>Quantità</Table.Th><Table.Th>Prezzo</Table.Th></Table.Tr></Table.Thead><Table.Tbody>{items.map((item) => <Table.Tr key={item.id}><Table.Td>{new Date(item.trade_date).toLocaleDateString("it-IT")}</Table.Td><Table.Td>{item.account_name}</Table.Td><Table.Td>{item.ticker}</Table.Td><Table.Td>{item.kind}</Table.Td><Table.Td>{item.quantity}</Table.Td><Table.Td>{amount(item.unit_price_eur)}</Table.Td></Table.Tr>)}</Table.Tbody></Table></Table.ScrollContainer></Card></Stack>;
+}
+
+function Metric({ label, value, note, positive = false }: { label: string; value: string; note: string; positive?: boolean }) { return <Card withBorder radius="md"><Text size="sm" c="dimmed">{label}</Text><Text className={positive ? "positive metric" : "metric"}>{value}</Text><Text size="xs" c="dimmed">{note}</Text></Card>; }
+function Status({ label, value }: { label: string; value: string }) { return <Group justify="space-between" wrap="nowrap"><Text size="sm">{label}</Text><Text size="sm" c="dimmed">{value}</Text></Group>; }
 function PortfolioChart() {
   const element = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!element.current) return;
-    let disposed = false;
-    let chart: { setOption: (option: object) => void; resize: () => void; dispose: () => void } | undefined;
-    void Promise.all([import("echarts/core"), import("echarts/renderers"), import("echarts/components")]).then(([echarts, renderers, components]) => {
-      if (disposed || !element.current) return;
-      echarts.use([renderers.SVGRenderer, components.GraphicComponent]);
-      chart = echarts.init(element.current, undefined, { renderer: "svg" });
-      chart.setOption({
-        series: [],
-        graphic: { type: "text", left: "center", top: "middle", style: { text: "Nessuna serie storica disponibile", fill: "#9097a6", fontSize: 14 } },
-      });
-    });
-    const resize = () => chart?.resize();
-    window.addEventListener("resize", resize);
-    return () => { disposed = true; window.removeEventListener("resize", resize); chart?.dispose(); };
-  }, []);
-  return <div className="chart" ref={element} role="img" aria-label="Grafico del valore del portafoglio: nessuna serie storica disponibile" />;
+  useEffect(() => { if (!element.current) return; let disposed = false; let chart: { setOption: (option: object) => void; resize: () => void; dispose: () => void } | undefined; void Promise.all([import("echarts/core"), import("echarts/renderers"), import("echarts/components")]).then(([echarts, renderers, components]) => { if (disposed || !element.current) return; echarts.use([renderers.SVGRenderer, components.GraphicComponent]); chart = echarts.init(element.current, undefined, { renderer: "svg" }); chart.setOption({ series: [], graphic: { type: "text", left: "center", top: "middle", style: { text: "Nessuna serie storica disponibile", fill: "#9097a6", fontSize: 14 } } }); }); const resize = () => chart?.resize(); window.addEventListener("resize", resize); return () => { disposed = true; window.removeEventListener("resize", resize); chart?.dispose(); }; }, []);
+  return <div className="chart" ref={element} role="img" aria-label="Grafico del valore del portafoglio" />;
 }
