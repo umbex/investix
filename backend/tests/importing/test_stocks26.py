@@ -15,6 +15,7 @@ def test_import_uses_actual_m_n_quote_headers_and_is_idempotent(tmp_path: Path) 
     assert preview.valid_rows == 1
     assert preview.rows[0].quote_symbol == "VWCE"
     assert preview.rows[0].quote_currency == "EUR"
+    assert preview.rows[0].account_name == "Directa"
     assert preview.source_hash == preview_movimenti(export).source_hash
 
 

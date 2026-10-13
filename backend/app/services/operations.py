@@ -5,7 +5,7 @@ from app.models import Account, Instrument, Operation, OperationRevision
 from app.schemas.operations import OperationCreate, OperationRevisionRequest
 
 
-def create_operation(session: Session, payload: OperationCreate) -> Operation:
+def create_operation(session: Session, payload: OperationCreate, *, commit: bool = True) -> Operation:
     account = session.scalar(select(Account).where(Account.name == payload.account_name))
     if account is None:
         account = Account(name=payload.account_name)
@@ -20,8 +20,11 @@ def create_operation(session: Session, payload: OperationCreate) -> Operation:
     values = payload.model_dump(exclude={"account_name", "ticker"})
     operation = Operation(account_id=account.id, instrument_id=instrument.id, **values)
     session.add(operation)
-    session.commit()
-    session.refresh(operation)
+    if commit:
+        session.commit()
+        session.refresh(operation)
+    else:
+        session.flush()
     return operation
 
 

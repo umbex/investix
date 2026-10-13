@@ -1,6 +1,7 @@
 import csv
 import hashlib
 from dataclasses import dataclass
+from datetime import date
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
 
@@ -11,6 +12,8 @@ SUPPORTED_TYPES = {"Acquisto": "BUY", "Vendita": "SELL", "Saldo iniziale": "BUY"
 @dataclass(frozen=True)
 class StagedRow:
     source_row: int
+    trade_date: date
+    account_name: str
     ticker: str
     kind: str
     quantity: Decimal
@@ -49,7 +52,7 @@ def preview_movimenti(source: Path) -> ImportPreview:
                 price = Decimal(row["PREZZO EUR"])
                 if quantity <= 0 or price < 0 or not row["TICKER"] or not row["CONTO"]:
                     raise ValueError("riga incompleta o quantità/prezzo invalidi")
-                rows.append(StagedRow(source_row, row["TICKER"].upper(), SUPPORTED_TYPES[row["TIPO"]], quantity, price, row["SIMBOLO QUOTA"], row["VALUTA QUOTA"].upper()))
+                rows.append(StagedRow(source_row, date.fromisoformat(row["DATA"]), row["CONTO"], row["TICKER"].upper(), SUPPORTED_TYPES[row["TIPO"]], quantity, price, row["SIMBOLO QUOTA"], row["VALUTA QUOTA"].upper()))
             except (InvalidOperation, ValueError) as error:
                 errors.append(f"Riga {source_row}: {error}")
     return ImportPreview(hashlib.sha256(raw).hexdigest(), rows, errors)
