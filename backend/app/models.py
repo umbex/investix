@@ -1,6 +1,6 @@
 from datetime import date, datetime
 
-from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Integer, Numeric, String, Text, func
+from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Integer, Numeric, String, Text, UniqueConstraint, func
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -54,9 +54,14 @@ class OperationRevision(Identified):
 
 class Observation(Identified):
     __tablename__ = "observations"
+    __table_args__ = (UniqueConstraint("instrument_id", "provider", "observed_at", name="uq_observation_source_time"),)
     instrument_id: Mapped[int] = mapped_column(ForeignKey("instruments.id"))
     provider: Mapped[str] = mapped_column(String(100))
     price: Mapped[Numeric] = mapped_column(Numeric(24, 10))
+    raw_price: Mapped[Numeric] = mapped_column(Numeric(24, 10), server_default="0")
+    currency: Mapped[str] = mapped_column(String(8), server_default="EUR")
+    fx_to_eur: Mapped[Numeric] = mapped_column(Numeric(24, 10), server_default="1")
+    observed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
 class Benchmark(Identified):
