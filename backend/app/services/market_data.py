@@ -55,3 +55,21 @@ def persist_observation(session: Session, market_observation: MarketObservation)
     session.commit()
     session.refresh(stored)
     return stored
+
+
+def refresh_instruments(
+    session: Session,
+    fetch: Callable[[str, str], MarketObservation],
+) -> dict[str, list[str] | dict[str, str]]:
+    """Refresh every configured quote symbol without turning one provider error into data loss."""
+    refreshed: list[str] = []
+    failed: dict[str, str] = {}
+    instruments = list(session.scalars(select(Instrument).where(Instrument.quote_symbol.is_not(None)).order_by(Instrument.ticker)))
+    for instrument in instruments:
+        try:
+            persist_observation(session, fetch(instrument.quote_symbol, instrument.ticker))
+            refreshed.append(instrument.ticker)
+        except ProviderError as error:
+            session.rollback()
+            failed[instrument.ticker] = str(error)
+    return {"refreshed": refreshed, "failed": failed}

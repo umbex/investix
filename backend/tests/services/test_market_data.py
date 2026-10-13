@@ -56,3 +56,20 @@ def test_persistence_is_idempotent_for_the_same_provider_timestamp() -> None:
         second = persist_observation(session, observation())
 
     assert first.id == second.id
+
+
+def test_refreshes_quoted_instruments_and_reports_per_symbol_failures() -> None:
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import Session
+
+    from app.models import Base, Instrument
+    from app.services.market_data import refresh_instruments
+
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    with Session(engine) as session:
+        session.add_all([Instrument(ticker="EQQQ", quote_symbol="EQQQ.MI"), Instrument(ticker="MISSING", quote_symbol="MISSING")])
+        session.commit()
+        result = refresh_instruments(session, lambda symbol, ticker: observation() if ticker == "EQQQ" else (_ for _ in ()).throw(ProviderError("simbolo")))
+
+    assert result == {"refreshed": ["EQQQ"], "failed": {"MISSING": "simbolo"}}
