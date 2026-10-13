@@ -39,3 +39,17 @@ def test_invalid_manual_price_is_rejected(tmp_path) -> None:
 
     with pytest.raises(ProviderError, match="prezzo"):
         ManualCsvAdapter(source).fetch("VWCE")
+
+
+def test_manual_csv_iterates_a_historical_snapshot(tmp_path) -> None:
+    source = tmp_path / "prices.csv"
+    source.write_text(
+        "ticker,date,price,currency,fx_to_eur\n"
+        "VWCE,2026-01-02,100,EUR,1\n"
+        "VWCE,2026-01-03,101,EUR,1\n"
+    )
+
+    observations = list(ManualCsvAdapter(source).iter_observations())
+
+    assert [item.raw_price for item in observations] == [Decimal("100"), Decimal("101")]
+    assert observations[-1].observed_at == datetime(2026, 1, 3, tzinfo=timezone.utc)

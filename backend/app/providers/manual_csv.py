@@ -15,15 +15,22 @@ class ManualCsvAdapter:
         self.source = source
 
     def fetch(self, ticker: str) -> MarketObservation:
-        try:
-            with self.source.open(newline="", encoding="utf-8") as handle:
-                rows = list(csv.DictReader(handle))
-        except OSError as error:
-            raise ProviderError(f"CSV non disponibile: {error}") from error
-        matches = [row for row in rows if row.get("ticker", "").upper() == ticker.upper()]
+        matches = [row for row in self._rows() if row.get("ticker", "").upper() == ticker.upper()]
         if not matches:
             raise ProviderError(f"Simbolo {ticker} non trovato nel CSV")
-        row = matches[-1]
+        return self._to_observation(matches[-1], ticker)
+
+    def iter_observations(self) -> list[MarketObservation]:
+        return [self._to_observation(row, row.get("ticker", "")) for row in self._rows()]
+
+    def _rows(self) -> list[dict[str, str]]:
+        try:
+            with self.source.open(newline="", encoding="utf-8") as handle:
+                return list(csv.DictReader(handle))
+        except OSError as error:
+            raise ProviderError(f"CSV non disponibile: {error}") from error
+
+    def _to_observation(self, row: dict[str, str], ticker: str) -> MarketObservation:
         try:
             observed_at = datetime.fromisoformat(row["date"]).replace(tzinfo=timezone.utc)
             return normalize_observation(
