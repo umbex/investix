@@ -24,3 +24,10 @@ def test_reconciliation_report_exposes_tolerance_and_explainable_mismatch() -> N
 
     assert report.passed is True
     assert report.quantity_tolerance == Decimal("0.01")
+
+
+def test_reconciliation_report_serializes_for_persistence() -> None:
+    report = reconciliation_report({"VWCE|Directa": Decimal("2")}, {"VWCE|Directa": Decimal("2")})
+
+    assert report.as_dict()["passed"] is True
+    assert report.as_dict()["differences"] == {}

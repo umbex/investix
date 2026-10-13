@@ -19,6 +19,13 @@ class ReconciliationReport:
     quantity_tolerance: Decimal
     differences: dict[str, tuple[Decimal, Decimal]]
 
+    def as_dict(self) -> dict:
+        return {
+            "passed": self.passed,
+            "quantity_tolerance": str(self.quantity_tolerance),
+            "differences": {key: {"imported": str(values[0]), "reference": str(values[1])} for key, values in self.differences.items()},
+        }
+
 
 def reconciliation_report(imported: dict[str, Decimal], reference: dict[str, Decimal], *, tolerance: ReconciliationTolerance = ReconciliationTolerance()) -> ReconciliationReport:
     differences = {
