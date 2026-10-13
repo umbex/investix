@@ -28,6 +28,12 @@ export type PortfolioSummary = {
   valuation_status: "available" | "unavailable_without_observation";
 };
 
+export type PerformanceSummary = {
+  points: { date: string; value_eur: string; external_flow_eur: string }[];
+  total_return: string | null;
+  methodology: string;
+};
+
 export type Operation = {
   id: number;
   account_name: string;
@@ -56,6 +62,7 @@ export const api = {
     body: JSON.stringify({ username, password }),
   }),
   portfolio: (ticker?: string) => request<PortfolioSummary>("/portfolio" + (ticker ? "?" + new URLSearchParams({ ticker }) : "")),
+  performance: (ticker?: string) => request<PerformanceSummary>("/performance" + (ticker ? "?" + new URLSearchParams({ ticker }) : "")),
   operations: () => request<{ items: Operation[]; total: number }>("/operations"),
   createOperation: (payload: Record<string, unknown>) => request<Operation>("/operations", {
     method: "POST",

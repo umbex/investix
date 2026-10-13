@@ -24,6 +24,7 @@ def client_with_database(monkeypatch) -> TestClient:
     Base.metadata.create_all(engine)
     sessions = sessionmaker(bind=engine, expire_on_commit=False)
     app = create_app()
+    app.state.session_factory = sessions
 
     def session_override():
         with sessions() as session:

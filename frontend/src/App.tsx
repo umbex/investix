@@ -1,7 +1,7 @@
 import { AppShell, Badge, Button, Card, Group, Loader, MantineProvider, NumberInput, Select, SimpleGrid, Stack, Table, Text, TextInput, Title } from "@mantine/core";
 import { FormEvent, useEffect, useRef, useState } from "react";
 
-import { api, type Operation, type PortfolioSummary } from "./api";
+import { api, type Operation, type PerformanceSummary, type PortfolioSummary } from "./api";
 import "./styles.css";
 
 const euro = new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR", maximumFractionDigits: 2 });
@@ -28,9 +28,11 @@ function Login({ onAuthenticated }: { onAuthenticated: () => void }) {
 
 function Dashboard({ onOpenRegistry }: { onOpenRegistry: () => void }) {
   const [summary, setSummary] = useState<PortfolioSummary>();
+  const [performance, setPerformance] = useState<PerformanceSummary>();
+  const [range, setRange] = useState("Tutto");
   const [ticker, setTicker] = useState("");
   const [error, setError] = useState("");
-  const load = async (filter = ticker) => { setError(""); try { setSummary(await api.portfolio(filter || undefined)); } catch (reason) { setError(reason instanceof Error ? reason.message : "Dati non disponibili"); } };
+  const load = async (filter = ticker) => { setError(""); try { setSummary(await api.portfolio(filter || undefined)); try { setPerformance(await api.performance(filter || undefined)); } catch { setPerformance(undefined); } } catch (reason) { setError(reason instanceof Error ? reason.message : "Dati non disponibili"); } };
   useEffect(() => { void load(""); }, []);
   const positions = summary?.positions ?? [];
   return <Stack gap="lg" className="dashboard">
@@ -38,7 +40,7 @@ function Dashboard({ onOpenRegistry }: { onOpenRegistry: () => void }) {
     <Group className="filter-bar" align="end"><TextInput label="Filtra per ticker" placeholder="es. VWCE" value={ticker} onChange={(event) => setTicker(event.currentTarget.value.toUpperCase())} /><Button onClick={() => void load()}>Applica</Button><Button variant="subtle" onClick={() => { setTicker(""); void load(""); }}>Azzera</Button><Button component="a" variant="light" href={api.exportUrl(ticker || undefined)} download>Esporta CSV</Button></Group>
     {error && <Card withBorder><Text c="red">{error}</Text><Button mt="sm" size="xs" onClick={() => void load()}>Riprova</Button></Card>}
     {!summary && !error ? <Group justify="center" py="xl"><Loader aria-label="Caricamento portafoglio" /></Group> : <><SimpleGrid cols={{ base: 1, xs: 2, md: 4 }} spacing="md"><Metric label="Valore portafoglio" value={amount(summary?.kpis.market_value_eur)} note={summary?.valuation_status === "available" ? "Ultima osservazione persistita" : "Quotazioni mancanti"} /><Metric label="Capitale aperto" value={amount(summary?.kpis.open_cost_eur)} note="Costo ricostruito dal ledger" /><Metric label="P&L realizzato" value={amount(summary?.kpis.realized_pnl_eur)} note="Vendite registrate" positive={Number(summary?.kpis.realized_pnl_eur) > 0} /><Metric label="P&L non realizzato" value={amount(summary?.kpis.unrealized_pnl_eur)} note="Disponibile con quotazioni EOD" positive={Number(summary?.kpis.unrealized_pnl_eur) > 0} /></SimpleGrid>
-      <SimpleGrid cols={{ base: 1, md: 3 }} spacing="md"><Card withBorder radius="md" className="chart-card" style={{ gridColumn: "span 2" }}><Group justify="space-between"><Title order={3}>Valore nel tempo</Title><Badge variant="outline">EUR</Badge></Group><PortfolioChart /><Text size="xs" c="dimmed">Le serie storiche appariranno solo dopo l’import di osservazioni valide.</Text></Card><Card withBorder radius="md"><Title order={3}>Stato dati</Title><Stack mt="md" gap="sm"><Status label="Ledger" value={String(positions.length) + " strumenti"} /><Status label="Provider prezzi" value="Non configurato" /><Status label="Ultima quotazione" value={summary?.valuation_status === "available" ? "Disponibile" : "Non disponibile"} /></Stack></Card></SimpleGrid>
+      <SimpleGrid cols={{ base: 1, md: 3 }} spacing="md"><Card withBorder radius="md" className="chart-card" style={{ gridColumn: "span 2" }}><Group justify="space-between"><Title order={3}>Valore nel tempo</Title><Group gap="xs"><Select aria-label="Intervallo grafico" size="xs" value={range} onChange={(value) => setRange(value || "Tutto")} data={["1M", "3M", "6M", "YTD", "1Y", "2Y", "Tutto"]} /><Badge variant="outline">EUR</Badge></Group></Group><PortfolioChart performance={performance} range={range} /><Text size="xs" c="dimmed">{performance?.methodology || "Serie non disponibile: servono osservazioni storiche valide."}</Text></Card><Card withBorder radius="md"><Title order={3}>Stato dati</Title><Stack mt="md" gap="sm"><Status label="Ledger" value={String(positions.length) + " strumenti"} /><Status label="Provider prezzi" value="Snapshot storico" /><Status label="Rendimento TWR" value={performance?.total_return == null ? "N/D" : new Intl.NumberFormat("it-IT", { style: "percent", maximumFractionDigits: 2 }).format(Number(performance.total_return))} /><Status label="Ultima quotazione" value={summary?.valuation_status === "available" ? "Disponibile" : "Non disponibile"} /></Stack></Card></SimpleGrid>
       <Card withBorder radius="md" className="positions"><Group justify="space-between"><Title order={3}>Posizioni</Title><Button variant="subtle" size="xs" onClick={onOpenRegistry}>Registro operazioni</Button></Group><PositionTable positions={positions} /></Card></>}
   </Stack>;
 }
@@ -62,8 +64,17 @@ function Operations() {
 
 function Metric({ label, value, note, positive = false }: { label: string; value: string; note: string; positive?: boolean }) { return <Card withBorder radius="md"><Text size="sm" c="dimmed">{label}</Text><Text className={positive ? "positive metric" : "metric"}>{value}</Text><Text size="xs" c="dimmed">{note}</Text></Card>; }
 function Status({ label, value }: { label: string; value: string }) { return <Group justify="space-between" wrap="nowrap"><Text size="sm">{label}</Text><Text size="sm" c="dimmed">{value}</Text></Group>; }
-function PortfolioChart() {
+function PortfolioChart({ performance, range }: { performance?: PerformanceSummary; range: string }) {
   const element = useRef<HTMLDivElement>(null);
-  useEffect(() => { if (!element.current) return; let disposed = false; let chart: { setOption: (option: object) => void; resize: () => void; dispose: () => void } | undefined; void Promise.all([import("echarts/core"), import("echarts/renderers"), import("echarts/components")]).then(([echarts, renderers, components]) => { if (disposed || !element.current) return; echarts.use([renderers.SVGRenderer, components.GraphicComponent]); chart = echarts.init(element.current, undefined, { renderer: "svg" }); chart.setOption({ series: [], graphic: { type: "text", left: "center", top: "middle", style: { text: "Nessuna serie storica disponibile", fill: "#9097a6", fontSize: 14 } } }); }); const resize = () => chart?.resize(); window.addEventListener("resize", resize); return () => { disposed = true; window.removeEventListener("resize", resize); chart?.dispose(); }; }, []);
+  const points = withinRange(performance?.points ?? [], range);
+  useEffect(() => { if (!element.current) return; let disposed = false; let chart: { setOption: (option: object) => void; resize: () => void; dispose: () => void } | undefined; void Promise.all([import("echarts/core"), import("echarts/renderers"), import("echarts/components"), import("echarts/charts")]).then(([echarts, renderers, components, charts]) => { if (disposed || !element.current) return; echarts.use([renderers.SVGRenderer, components.GraphicComponent, components.GridComponent, components.TooltipComponent, charts.LineChart]); chart = echarts.init(element.current, undefined, { renderer: "svg" }); chart.setOption(points.length ? { grid: { left: 48, right: 16, top: 18, bottom: 28 }, tooltip: { trigger: "axis", valueFormatter: (value: number) => euro.format(value) }, xAxis: { type: "category", data: points.map((point) => point.date), axisLabel: { formatter: (value: string) => new Date(value).toLocaleDateString("it-IT", { month: "short", year: "2-digit" }) } }, yAxis: { type: "value", axisLabel: { formatter: (value: number) => euro.format(value) } }, series: [{ type: "line", data: points.map((point) => Number(point.value_eur)), smooth: true, showSymbol: false, areaStyle: { opacity: 0.16 }, lineStyle: { color: "#22d3ee" } }] } : { series: [], graphic: { type: "text", left: "center", top: "middle", style: { text: "Nessuna serie storica disponibile", fill: "#9097a6", fontSize: 14 } } }); }); const resize = () => chart?.resize(); window.addEventListener("resize", resize); return () => { disposed = true; window.removeEventListener("resize", resize); chart?.dispose(); }; }, [points]);
   return <div className="chart" ref={element} role="img" aria-label="Grafico del valore del portafoglio" />;
+}
+
+function withinRange(points: PerformanceSummary["points"], range: string) {
+  if (!points.length || range === "Tutto") return points;
+  const end = new Date(points.at(-1)!.date);
+  const start = new Date(end);
+  if (range === "YTD") start.setMonth(0, 1); else start.setMonth(start.getMonth() - Number(range.replace("M", "").replace("Y", "")) * (range.endsWith("Y") ? 12 : 1));
+  return points.filter((point) => new Date(point.date) >= start);
 }
