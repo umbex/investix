@@ -17,6 +17,9 @@ class LedgerReconciliation:
     ledger_quantities: dict[str, Decimal]
     quantity_status: str
 
+    def as_dict(self) -> dict:
+        return {"reference_quantities": {key: str(value) for key, value in self.reference_quantities.items()}, "ledger_quantities": {key: str(value) for key, value in self.ledger_quantities.items()}, "quantity_status": self.quantity_status}
+
 
 def reconcile_preview_with_ledger(session: Session, preview: ImportPreview) -> LedgerReconciliation:
     if preview.errors:
