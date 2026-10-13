@@ -1,0 +1,15 @@
+.env
+.env.*
+!.env.example
+.DS_Store
+.venv/
+venv/
+node_modules/
+dist/
+build/
+__pycache__/
+*.pyc
+.pytest_cache/
+.coverage
+playwright-report/
+test-results/
