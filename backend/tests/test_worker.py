@@ -17,3 +17,11 @@ def test_worker_builds_twelve_adapter_with_ecb_fx_resolver() -> None:
 
     assert adapter is not None
     assert adapter._fx_to_eur(datetime(2026, 10, 12, tzinfo=timezone.utc)) == Decimal("0.9")
+
+
+def test_worker_refresh_once_skips_cleanly_when_provider_is_disabled() -> None:
+    from app.worker import refresh_once
+
+    settings = Settings(session_secret="test-session-secret-with-at-least-32chars")
+
+    assert refresh_once(settings, session_factory=lambda: None) == {"refreshed": [], "failed": {}}

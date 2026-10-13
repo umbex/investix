@@ -8,6 +8,7 @@ from decimal import Decimal
 
 from app.providers.ecb import EcbUsdEurAdapter
 from app.providers.twelve_data import TwelveDataAdapter
+from app.services.market_data import refresh_instruments
 from app.settings import Settings, get_settings
 
 logging.basicConfig(level=logging.INFO)
@@ -23,6 +24,14 @@ def build_twelve_data_adapter(settings: Settings, *, fetch_fx: Callable[[date], 
         api_key=settings.twelve_data_api_key,
         fx_to_eur=lambda observed_at: resolver(observed_at.date()),
     )
+
+
+def refresh_once(settings: Settings, *, session_factory: Callable[[], object]) -> dict[str, list[str] | dict[str, str]]:
+    provider = build_twelve_data_adapter(settings)
+    if provider is None:
+        return {"refreshed": [], "failed": {}}
+    with session_factory() as session:  # type: ignore[union-attr]
+        return refresh_instruments(session, lambda symbol, ticker: provider.fetch_latest(symbol, ticker=ticker))
 
 
 def run() -> None:
