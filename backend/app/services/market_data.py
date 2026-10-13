@@ -50,6 +50,12 @@ def persist_observation(session: Session, market_observation: MarketObservation)
         currency=market_observation.currency,
         fx_to_eur=market_observation.fx_to_eur,
         observed_at=market_observation.observed_at,
+        source_symbol=market_observation.source_symbol or market_observation.ticker,
+        venue=market_observation.venue,
+        quote_unit=market_observation.quote_unit,
+        price_field=market_observation.price_field,
+        status=market_observation.status,
+        fx_provider=market_observation.fx_provider,
     )
     session.add(stored)
     session.commit()

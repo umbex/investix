@@ -41,7 +41,8 @@ class TwelveDataAdapter:
                 raise ProviderError(f"Manca il cambio storico {currency}/EUR per {observed_at.date().isoformat()}")
             else:
                 fx_to_eur = self._fx_to_eur(observed_at)
-            return normalize_observation(provider=self.provider_name, ticker=ticker or symbol, observed_at=observed_at, raw_price=Decimal(value["close"]), currency=currency, fx_to_eur=fx_to_eur)
+            observation = normalize_observation(provider=self.provider_name, ticker=ticker or symbol, observed_at=observed_at, raw_price=Decimal(value["close"]), currency=currency, fx_to_eur=fx_to_eur)
+            return observation.__class__(**{**observation.__dict__, "source_symbol": symbol, "venue": meta.get("exchange"), "quote_unit": "share", "fx_provider": "ecb-reference" if currency != "EUR" else None})
         except (KeyError, IndexError, ValueError, InvalidOperation) as error:
             raise ProviderError(f"Risposta Twelve Data non valida: {error}") from error
 

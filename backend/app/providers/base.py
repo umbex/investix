@@ -20,6 +20,12 @@ class MarketObservation:
     currency: str
     fx_to_eur: Decimal
     normalized_price_eur: Decimal
+    source_symbol: str | None = None
+    venue: str | None = None
+    quote_unit: str | None = None
+    price_field: str | None = "close"
+    status: str = "valid"
+    fx_provider: str | None = None
 
 
 def normalize_observation(
