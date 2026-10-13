@@ -55,11 +55,12 @@ function PortfolioChart() {
     if (!element.current) return;
     let disposed = false;
     let chart: { setOption: (option: object) => void; resize: () => void; dispose: () => void } | undefined;
-    void import("echarts").then((echarts) => {
+    void Promise.all([import("echarts/core"), import("echarts/renderers"), import("echarts/components")]).then(([echarts, renderers, components]) => {
       if (disposed || !element.current) return;
+      echarts.use([renderers.SVGRenderer, components.GraphicComponent]);
       chart = echarts.init(element.current, undefined, { renderer: "svg" });
       chart.setOption({
-        xAxis: { show: false }, yAxis: { show: false }, series: [],
+        series: [],
         graphic: { type: "text", left: "center", top: "middle", style: { text: "Nessuna serie storica disponibile", fill: "#9097a6", fontSize: 14 } },
       });
     });

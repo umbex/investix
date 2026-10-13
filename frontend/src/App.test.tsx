@@ -4,6 +4,9 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("echarts", () => ({
   init: () => ({ setOption: vi.fn(), resize: vi.fn(), dispose: vi.fn() }),
 }));
+vi.mock("echarts/core", () => ({ use: vi.fn(), init: () => ({ setOption: vi.fn(), resize: vi.fn(), dispose: vi.fn() }) }));
+vi.mock("echarts/renderers", () => ({ SVGRenderer: {} }));
+vi.mock("echarts/components", () => ({ GraphicComponent: {} }));
 
 import { App } from "./App";
 
