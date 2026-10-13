@@ -6,7 +6,7 @@ from decimal import Decimal, InvalidOperation
 from pathlib import Path
 
 
-SUPPORTED_TYPES = {"Acquisto": "BUY", "Vendita": "SELL", "Saldo iniziale": "BUY"}
+SUPPORTED_TYPES = {"Acquisto": "BUY", "Vendita": "SELL", "Saldo iniziale": "OPENING_BALANCE", "Trasferimento in entrata": "TRANSFER_IN", "Trasferimento in uscita": "TRANSFER_OUT", "Rettifica": "ADJUSTMENT"}
 
 
 @dataclass(frozen=True)
@@ -20,6 +20,8 @@ class StagedRow:
     unit_price_eur: Decimal
     quote_symbol: str
     quote_currency: str
+    note: str | None = None
+    original_currency: str | None = None
 
 
 @dataclass(frozen=True)
@@ -54,9 +56,9 @@ def preview_movimenti(source: Path) -> ImportPreview:
                     raise ValueError("formula o errore non importabile")
                 quantity = _parse_decimal(values["QUANTITÀ"])
                 price = _parse_decimal(values["PREZZO EUR"])
-                if quantity <= 0 or price < 0 or not values["TICKER"] or not values["CONTO"]:
+                if (quantity <= 0 and values["TIPO"] != "Rettifica") or price < 0 or not values["TICKER"] or not values["CONTO"]:
                     raise ValueError("riga incompleta o quantità/prezzo invalidi")
-                rows.append(StagedRow(source_row, _parse_date(values["DATA"]), values["CONTO"], values["TICKER"].upper(), SUPPORTED_TYPES[values["TIPO"]], quantity, price, values["SIMBOLO QUOTA"], values["VALUTA QUOTA"].upper()))
+                rows.append(StagedRow(source_row, _parse_date(values["DATA"]), values["CONTO"], values["TICKER"].upper(), SUPPORTED_TYPES[values["TIPO"]], quantity, price, values["SIMBOLO QUOTA"], values["VALUTA QUOTA"].upper(), values.get("NOTE") or None, values["VALUTA QUOTA"].upper() or None))
             except (InvalidOperation, ValueError) as error:
                 errors.append(f"Riga {source_row}: {error}")
     return ImportPreview(hashlib.sha256(raw).hexdigest(), rows, errors)

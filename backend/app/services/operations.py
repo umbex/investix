@@ -51,6 +51,11 @@ def revise_operation(session: Session, operation_id: int, request: OperationRevi
         "source_order": request.source_order if request.source_order is not None else original.source_order,
         "fee_eur": request.fee_eur if request.fee_eur is not None else original.fee_eur,
         "dividend_eur": request.dividend_eur if request.dividend_eur is not None else original.dividend_eur,
+        "original_unit_price": request.original_unit_price if request.original_unit_price is not None else original.original_unit_price,
+        "original_currency": request.original_currency.upper() if request.original_currency is not None else original.original_currency,
+        "settlement_date": request.settlement_date if request.settlement_date is not None else original.settlement_date,
+        "note": request.note if request.note is not None else original.note,
+        "is_approximate": request.is_approximate if request.is_approximate is not None else original.is_approximate,
     }
     original.cancelled = True
     replacement = Operation(**values)
@@ -86,4 +91,9 @@ def operation_response(operation: Operation) -> dict:
         "source_order": operation.source_order,
         "fee_eur": operation.fee_eur,
         "dividend_eur": operation.dividend_eur,
+        "original_unit_price": operation.original_unit_price,
+        "original_currency": operation.original_currency,
+        "settlement_date": operation.settlement_date,
+        "note": operation.note,
+        "is_approximate": operation.is_approximate,
     }

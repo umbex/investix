@@ -118,3 +118,60 @@ def test_portfolio_summary_is_derived_from_the_authenticated_ledger(monkeypatch)
     assert Decimal(position["quantity"]) == Decimal("2")
     assert Decimal(position["open_cost_eur"]) == Decimal("200")
     assert Decimal(position["realized_pnl_eur"]) == Decimal("0")
+
+
+def test_operations_preserve_context_and_support_explicit_operational_kinds(monkeypatch) -> None:
+    client = client_with_database(monkeypatch)
+
+    opening = client.post(
+        "/api/operations",
+        json={
+            "account_name": "Directa",
+            "ticker": "EQQQ",
+            "kind": "OPENING_BALANCE",
+            "quantity": "4",
+            "unit_price_eur": "123.45",
+            "original_unit_price": "101.2",
+            "original_currency": "GBP",
+            "trade_date": "2026-01-02",
+            "settlement_date": "2026-01-06",
+            "source_order": 1,
+            "note": "Saldo iniziale ricostruito",
+            "is_approximate": True,
+        },
+    )
+    transferred = client.post(
+        "/api/operations",
+        json={
+            "account_name": "Directa",
+            "ticker": "EQQQ",
+            "kind": "TRANSFER_OUT",
+            "quantity": "1",
+            "unit_price_eur": "123.45",
+            "trade_date": "2026-01-07",
+            "source_order": 2,
+        },
+    )
+    adjusted = client.post(
+        "/api/operations",
+        json={
+            "account_name": "Directa",
+            "ticker": "EQQQ",
+            "kind": "ADJUSTMENT",
+            "quantity": "-0.5",
+            "unit_price_eur": "0",
+            "trade_date": "2026-01-08",
+            "source_order": 3,
+        },
+    )
+
+    assert opening.status_code == 201
+    assert transferred.status_code == 201
+    assert adjusted.status_code == 201
+    item = client.get("/api/operations").json()["items"][0]
+    assert item["kind"] == "OPENING_BALANCE"
+    assert item["original_unit_price"] == "101.2000000000"
+    assert item["original_currency"] == "GBP"
+    assert item["settlement_date"] == "2026-01-06"
+    assert item["note"] == "Saldo iniziale ricostruito"
+    assert item["is_approximate"] is True

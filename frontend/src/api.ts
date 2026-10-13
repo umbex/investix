@@ -45,13 +45,18 @@ export type Operation = {
   id: number;
   account_name: string;
   ticker: string;
-  kind: "BUY" | "SELL" | "DIVIDEND" | "FEE" | "SPLIT";
+  kind: "BUY" | "SELL" | "OPENING_BALANCE" | "DIVIDEND" | "FEE" | "SPLIT" | "TRANSFER_IN" | "TRANSFER_OUT" | "ADJUSTMENT";
   quantity: string;
   unit_price_eur: string;
   trade_date: string;
   source_order: number;
   fee_eur: string | null;
   dividend_eur: string | null;
+  original_unit_price: string | null;
+  original_currency: string | null;
+  settlement_date: string | null;
+  note: string | null;
+  is_approximate: boolean;
 };
 
 const apiUrl = (path: string) => "/api" + path;

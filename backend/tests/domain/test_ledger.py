@@ -73,3 +73,18 @@ def test_split_preserves_open_cost_and_changes_average_cost() -> None:
     assert snapshot.quantity == Decimal("6")
     assert snapshot.open_cost_eur == Decimal("200")
     assert snapshot.average_cost_eur == Decimal("33.33333333333333333333333333")
+
+
+def test_opening_balance_transfer_and_negative_adjustment_preserve_cost_without_realised_pnl() -> None:
+    snapshot = rebuild_position(
+        [
+            operation("OPENING_BALANCE", quantity="10", price="100", order=1),
+            operation("TRANSFER_OUT", quantity="2", price="100", order=2),
+            operation("TRANSFER_IN", quantity="1", price="100", order=3),
+            operation("ADJUSTMENT", quantity="-1", order=4),
+        ]
+    )
+
+    assert snapshot.quantity == Decimal("8")
+    assert snapshot.open_cost_eur == Decimal("800")
+    assert snapshot.realized.pnl_eur == Decimal("0")

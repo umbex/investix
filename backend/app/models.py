@@ -45,6 +45,11 @@ class Operation(Identified):
     trade_date: Mapped[date] = mapped_column(Date, server_default=func.current_date())
     source_order: Mapped[int] = mapped_column(Integer, server_default="0")
     cancelled: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    original_unit_price: Mapped[Numeric | None] = mapped_column(Numeric(24, 10), nullable=True)
+    original_currency: Mapped[str | None] = mapped_column(String(8), nullable=True)
+    settlement_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    is_approximate: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
 
 
 class OperationRevision(Identified):
