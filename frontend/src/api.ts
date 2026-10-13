@@ -87,7 +87,13 @@ export const api = {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ username, password }),
   }),
-  portfolio: (ticker?: string) => request<PortfolioSummary>("/portfolio" + (ticker ? "?" + new URLSearchParams({ ticker }) : "")),
+  portfolio: (ticker?: string, account?: string) => {
+    const params = new URLSearchParams();
+    if (ticker) params.set("ticker", ticker);
+    if (account) params.set("account", account);
+    const query = params.toString();
+    return request<PortfolioSummary>("/portfolio" + (query ? `?${query}` : ""));
+  },
   performance: (ticker?: string, dateFrom?: string, dateTo?: string) => {
     const params = new URLSearchParams();
     if (ticker) params.set("ticker", ticker);
@@ -102,7 +108,13 @@ export const api = {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   }),
-  exportUrl: (ticker?: string) => apiUrl("/portfolio/export.csv" + (ticker ? "?" + new URLSearchParams({ ticker }) : "")),
+  exportUrl: (ticker?: string, account?: string) => {
+    const params = new URLSearchParams();
+    if (ticker) params.set("ticker", ticker);
+    if (account) params.set("account", account);
+    const query = params.toString();
+    return apiUrl("/portfolio/export.csv" + (query ? `?${query}` : ""));
+  },
   performanceExportUrl: (ticker?: string, dateFrom?: string, dateTo?: string) => {
     const params = new URLSearchParams();
     if (ticker) params.set("ticker", ticker);

@@ -44,3 +44,28 @@ def test_portfolio_csv_uses_same_filtered_positions(monkeypatch) -> None:
     assert response.headers["content-type"].startswith("text/csv")
     assert "ticker,quantity,open_cost_eur" in response.text
     assert "VWCE,2.0000000000,200.0000000000" in response.text
+
+
+def test_portfolio_account_filter_limits_positions_and_allocation(monkeypatch) -> None:
+    client = client_with_database(monkeypatch)
+    create_buy(client)
+    response = client.post(
+        "/api/operations",
+        json={
+            "account_name": "Fineco",
+            "ticker": "VWCE",
+            "kind": "BUY",
+            "quantity": "1",
+            "unit_price_eur": "120",
+            "trade_date": "2026-01-03",
+            "source_order": 2,
+        },
+    )
+    assert response.status_code == 201
+
+    summary = client.get("/api/portfolio?account=Fineco").json()
+
+    assert summary["positions"][0]["quantity"] == "1.0000000000"
+    assert summary["account_allocations"][0]["account"] == "Fineco"
+    assert Decimal(summary["account_allocations"][0]["open_cost_eur"]) == Decimal("120")
+    assert Decimal(summary["account_allocations"][0]["weight"]) == Decimal("1")
