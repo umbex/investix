@@ -70,6 +70,13 @@ class Observation(Identified):
 class Benchmark(Identified):
     __tablename__ = "benchmarks"
     name: Mapped[str] = mapped_column(String(200), unique=True)
+    ticker: Mapped[str] = mapped_column(String(64), unique=True)
+    quote_symbol: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    quote_venue: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    quote_currency: Mapped[str] = mapped_column(String(8), server_default="EUR")
+    methodology: Mapped[str] = mapped_column(String(32), server_default="price_return")
+    active: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
+    note: Mapped[str | None] = mapped_column(Text(), nullable=True)
 
 
 class ImportRun(Identified):

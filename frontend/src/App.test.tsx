@@ -6,7 +6,7 @@ vi.mock("echarts", () => ({
 }));
 vi.mock("echarts/core", () => ({ use: vi.fn(), init: () => ({ setOption: vi.fn(), resize: vi.fn(), dispose: vi.fn() }) }));
 vi.mock("echarts/renderers", () => ({ SVGRenderer: {} }));
-vi.mock("echarts/components", () => ({ GraphicComponent: {}, GridComponent: {}, TooltipComponent: {} }));
+vi.mock("echarts/components", () => ({ GraphicComponent: {}, GridComponent: {}, TooltipComponent: {}, LegendComponent: {}, DataZoomComponent: {} }));
 vi.mock("echarts/charts", () => ({ LineChart: {} }));
 
 import { App } from "./App";
@@ -40,7 +40,7 @@ describe("App", () => {
           }],
         }),
       })
-      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ points: [], total_return: null, methodology: "TWR" }) });
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ points: [], total_return: null, methodology: "TWR", benchmarks: [] }) });
     vi.stubGlobal("fetch", fetchMock);
     render(<App />);
 

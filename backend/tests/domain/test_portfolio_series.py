@@ -18,6 +18,7 @@ def test_portfolio_series_uses_ledger_holdings_and_excludes_purchase_flow_from_t
         (date(2026, 1, 3), Decimal("110"), Decimal("0")),
     ]
     assert result.total_return == Decimal("0.1")
+    assert [point.cumulative_return for point in result.points] == [Decimal("0"), Decimal("0.1")]
 
 
 def test_portfolio_series_skips_days_without_a_price_for_an_open_position() -> None:

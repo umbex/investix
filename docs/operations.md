@@ -30,5 +30,6 @@ I comandi leggono `.env`; in una verifica separata si può impostare `INVESTIX_E
 
 - Google Sheets viene letto solo durante l’import iniziale da file esportato: non configurare credenziali Sheets nell’app.
 - Per verificare in seguito l’import senza riaprire il foglio, montare il CSV congelato nel container ed eseguire `python -m app.importing.reconcile_cli /data/movimenti.csv`; un disallineamento ticker/conto interrompe il report con dettaglio.
+- Il benchmark iniziale è configurabile senza riaprire Sheets: `python -m app.importing.benchmark_catalog_cli --name "Nasdaq-100" --ticker QQQ --symbol QQQ --venue NASDAQ --currency USD --methodology price_return --note "Proxy ETF; dividendi esclusi."`.
 - Il worker non abilita provider pubblici di default. Il CSV manuale mantiene l’uso personale a basso volume e la provenienza del dato.
 - Commissioni e dividendi assenti restano sconosciuti; non vanno convertiti in zero nell’operatività.

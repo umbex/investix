@@ -15,6 +15,8 @@ PRICE_COLUMNS = (
     ("MSFT", "USD", 6, 7),
     ("NVDA", "USD", 8, 9),
     ("SPCX", "USD", 10, 11),
+    # Active initial benchmark from SETUP: Nasdaq-100 ETF proxy, price return.
+    ("QQQ", "USD", 12, 13),
 )
 GBP_FX_COLUMNS = (80, 81)
 USD_FX_COLUMNS = (82, 83)

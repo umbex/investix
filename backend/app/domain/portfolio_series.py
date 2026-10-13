@@ -1,6 +1,6 @@
 """Build auditable daily portfolio values from the ledger and persisted prices."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import date
 from decimal import Decimal
 
@@ -28,6 +28,7 @@ class PortfolioSeriesPoint:
     day: date
     value_eur: Decimal
     external_flow_eur: Decimal
+    cumulative_return: Decimal | None = None
 
 
 @dataclass(frozen=True)
@@ -63,7 +64,20 @@ def build_portfolio_series(*, operations: list[HistoricalOperation], quotes: lis
         pending_flow = Decimal("0")
 
     performance = calculate_daily_twr([(point.day, point.value_eur, point.external_flow_eur) for point in points])
-    return PortfolioSeries(points, performance.total_return)
+    return PortfolioSeries(_with_cumulative_returns(points), performance.total_return)
+
+
+def _with_cumulative_returns(points: list[PortfolioSeriesPoint]) -> list[PortfolioSeriesPoint]:
+    if len(points) < 2:
+        return points
+    multiplier = Decimal("1")
+    result = [replace(points[0], cumulative_return=Decimal("0"))]
+    for previous, ending in zip(points, points[1:]):
+        if previous.value_eur <= 0:
+            return [replace(point, cumulative_return=None) for point in points]
+        multiplier *= (ending.value_eur - ending.external_flow_eur) / previous.value_eur
+        result.append(replace(ending, cumulative_return=multiplier - Decimal("1")))
+    return result
 
 
 def _quantity_delta(operation: HistoricalOperation) -> Decimal:

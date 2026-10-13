@@ -29,9 +29,16 @@ export type PortfolioSummary = {
 };
 
 export type PerformanceSummary = {
-  points: { date: string; value_eur: string; external_flow_eur: string }[];
+  points: { date: string; value_eur: string; external_flow_eur: string; cumulative_return: string | null }[];
   total_return: string | null;
   methodology: string;
+  benchmarks: {
+    name: string;
+    ticker: string;
+    quote_currency: string;
+    methodology: "price_return" | "total_return";
+    points: { date: string; return: string }[];
+  }[];
 };
 
 export type Operation = {
