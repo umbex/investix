@@ -101,3 +101,18 @@ def test_cancel_is_audited_and_validation_rejects_invalid_sale(monkeypatch) -> N
     assert cancelled.status_code == 204
     assert client.get("/api/operations").json()["total"] == 0
     assert invalid.status_code == 422
+
+
+def test_portfolio_summary_is_derived_from_the_authenticated_ledger(monkeypatch) -> None:
+    client = client_with_database(monkeypatch)
+    create_buy(client)
+
+    response = client.get("/api/portfolio")
+
+    assert response.status_code == 200
+    assert response.json()["valuation_status"] == "unavailable_without_observation"
+    position = response.json()["positions"][0]
+    assert position["ticker"] == "VWCE"
+    assert Decimal(position["quantity"]) == Decimal("2")
+    assert Decimal(position["open_cost_eur"]) == Decimal("200")
+    assert Decimal(position["realized_pnl_eur"]) == Decimal("0")
