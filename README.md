@@ -16,6 +16,7 @@ The frontend is bound to `127.0.0.1:5173` and the API to `127.0.0.1:8000`; acces
 
 - `POSTGRES_PASSWORD`
 - `INVESTIX_SESSION_SECRET`
+- `INVESTIX_ADMIN_PASSWORD`
 
 ## Optional environment variables
 
