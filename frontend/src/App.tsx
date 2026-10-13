@@ -1,9 +1,11 @@
-import { AppShell, Badge, Button, Card, Group, MantineProvider, SimpleGrid, Stack, Text, Title } from "@mantine/core";
-import { useEffect, useRef } from "react";
+import { AppShell, Badge, Button, Card, Group, MantineProvider, PasswordInput, SimpleGrid, Stack, Text, TextInput, Title } from "@mantine/core";
+import { FormEvent, useEffect, useRef, useState } from "react";
 
 import "./styles.css";
 
 export function App() {
+  const [authenticated, setAuthenticated] = useState(false);
+  if (!authenticated) return <MantineProvider defaultColorScheme="dark"><Login onAuthenticated={() => setAuthenticated(true)} /></MantineProvider>;
   return (
     <MantineProvider defaultColorScheme="dark">
       <AppShell header={{ height: 64 }} padding="md" className="investix-shell">
@@ -39,6 +41,16 @@ export function App() {
       </AppShell>
     </MantineProvider>
   );
+}
+
+function Login({ onAuthenticated }: { onAuthenticated: () => void }) {
+  const [error, setError] = useState("");
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault(); const form = new FormData(event.currentTarget);
+    const response = await fetch("http://127.0.0.1:8000/api/auth/login", { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ username: form.get("username"), password: form.get("password") }) });
+    if (response.ok) onAuthenticated(); else setError("Credenziali non valide o API non disponibile");
+  }
+  return <main className="login"><Card withBorder radius="md" p="xl"><Title order={1}>Investix</Title><Text c="dimmed" mb="lg">Accesso privato</Text><form onSubmit={submit}><Stack><TextInput name="username" label="Utente" required autoComplete="username" /><PasswordInput name="password" label="Password" required autoComplete="current-password" />{error && <Text c="red" size="sm">{error}</Text>}<Button type="submit">Accedi</Button></Stack></form></Card></main>;
 }
 
 function Metric({ label, value, note, positive = false }: { label: string; value: string; note: string; positive?: boolean }) {

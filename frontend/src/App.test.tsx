@@ -15,8 +15,6 @@ describe("App", () => {
     render(<App />);
 
     expect(screen.getByRole("heading", { name: "Investix" })).toBeInTheDocument();
-    expect(screen.getByText("Portafoglio privato")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Panoramica" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Posizioni" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Accedi" })).toBeInTheDocument();
   });
 });
