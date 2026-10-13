@@ -1,7 +1,7 @@
 import csv
 import hashlib
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
 
@@ -52,7 +52,16 @@ def preview_movimenti(source: Path) -> ImportPreview:
                 price = Decimal(row["PREZZO EUR"])
                 if quantity <= 0 or price < 0 or not row["TICKER"] or not row["CONTO"]:
                     raise ValueError("riga incompleta o quantità/prezzo invalidi")
-                rows.append(StagedRow(source_row, date.fromisoformat(row["DATA"]), row["CONTO"], row["TICKER"].upper(), SUPPORTED_TYPES[row["TIPO"]], quantity, price, row["SIMBOLO QUOTA"], row["VALUTA QUOTA"].upper()))
+                rows.append(StagedRow(source_row, _parse_date(row["DATA"]), row["CONTO"], row["TICKER"].upper(), SUPPORTED_TYPES[row["TIPO"]], quantity, price, row["SIMBOLO QUOTA"], row["VALUTA QUOTA"].upper()))
             except (InvalidOperation, ValueError) as error:
                 errors.append(f"Riga {source_row}: {error}")
     return ImportPreview(hashlib.sha256(raw).hexdigest(), rows, errors)
+
+
+def _parse_date(value: str) -> date:
+    for pattern in ("%Y-%m-%d", "%d/%m/%Y"):
+        try:
+            return datetime.strptime(value, pattern).date()
+        except ValueError:
+            pass
+    raise ValueError("data non valida")

@@ -27,3 +27,10 @@ def test_import_blocks_unknown_type_and_formula_error(tmp_path: Path) -> None:
 
     assert preview.valid_rows == 0
     assert len(preview.errors) == 1
+
+
+def test_import_accepts_italian_date_format(tmp_path: Path) -> None:
+    export = tmp_path / "movimenti.csv"
+    export.write_text(HEADER + "02/01/2026,Directa,VWCE,,Acquisto,2,100,,,,,,VWCE,EUR\n")
+
+    assert preview_movimenti(export).rows[0].trade_date.isoformat() == "2026-01-02"
