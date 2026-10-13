@@ -21,6 +21,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    environment:
+      INVESTIX_DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-investix}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@db:5432/${POSTGRES_DB:-investix}
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000
 
   worker:
@@ -31,6 +33,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    environment:
+      INVESTIX_DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-investix}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@db:5432/${POSTGRES_DB:-investix}
     command: python -m app.worker
 
   web:

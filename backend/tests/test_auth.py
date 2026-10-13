@@ -1,0 +1,24 @@
+from fastapi.testclient import TestClient
+
+from app.main import create_app
+from app.settings import get_settings
+
+
+def test_portfolio_requires_authenticated_session(monkeypatch) -> None:
+    monkeypatch.setenv("INVESTIX_ADMIN_PASSWORD", "test-password")
+    get_settings.cache_clear()
+    response = TestClient(create_app()).get("/api/portfolio")
+
+    assert response.status_code == 401
+
+
+def test_configured_credentials_create_a_session(monkeypatch) -> None:
+    monkeypatch.setenv("INVESTIX_ADMIN_PASSWORD", "test-password")
+    get_settings.cache_clear()
+    response = TestClient(create_app()).post(
+        "/api/auth/login",
+        json={"username": "investix", "password": "test-password"},
+    )
+
+    assert response.status_code == 204
+    assert "session" in response.cookies
