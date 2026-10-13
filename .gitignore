@@ -9,6 +9,8 @@ dist/
 build/
 __pycache__/
 *.pyc
+*.egg-info/
+*.tsbuildinfo
 .pytest_cache/
 .coverage
 playwright-report/
