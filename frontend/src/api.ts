@@ -24,6 +24,8 @@ export type Position = {
 
 export type PortfolioSummary = {
   positions: Position[];
+  allocations: { ticker: string; market_value_eur: string | null; weight: string | null }[];
+  account_allocations: { account: string; open_cost_eur: string; weight: string | null }[];
   kpis: {
     open_cost_eur: string;
     market_value_eur: string | null;

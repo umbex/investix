@@ -97,8 +97,26 @@ def _summary(positions: list[dict]) -> dict:
     market_value = sum(values, Decimal("0")) if has_all_values else None
     open_cost = sum((item["open_cost_eur"] for item in positions), Decimal("0"))
     realized = sum((item["realized_pnl_eur"] for item in positions), Decimal("0"))
+    allocations = [
+        {
+            "ticker": item["ticker"],
+            "market_value_eur": item["market_value_eur"],
+            "weight": item["market_value_eur"] / market_value if has_all_values and market_value else None,
+        }
+        for item in positions
+    ]
+    account_costs: dict[str, Decimal] = defaultdict(lambda: Decimal("0"))
+    for position in positions:
+        for account in position["accounts"]:
+            account_costs[account["name"]] += account["open_cost_eur"]
+    account_allocations = [
+        {"account": name, "open_cost_eur": cost, "weight": cost / open_cost if open_cost else None}
+        for name, cost in sorted(account_costs.items())
+    ]
     return {
         "positions": positions,
+        "allocations": allocations,
+        "account_allocations": account_allocations,
         "kpis": {
             "open_cost_eur": open_cost,
             "market_value_eur": market_value,

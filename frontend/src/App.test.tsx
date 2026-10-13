@@ -38,6 +38,8 @@ describe("App", () => {
             market_value_eur: null, unrealized_pnl_eur: null, market_data_status: "missing",
             accounts: [{ name: "Directa", quantity: "2", open_cost_eur: "200", realized_pnl_eur: "0" }],
           }],
+          allocations: [{ ticker: "VWCE", market_value_eur: null, weight: null }],
+          account_allocations: [{ account: "Directa", open_cost_eur: "200", weight: "1" }],
         }),
       })
       .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ points: [], total_return: null, methodology: "TWR", benchmarks: [] }) });
@@ -49,7 +51,7 @@ describe("App", () => {
     fireEvent.click(screen.getByRole("button", { name: "Accedi" }));
 
     await waitFor(() => expect(screen.getByRole("heading", { name: "Panoramica" })).toBeInTheDocument());
-    expect(await screen.findByText("VWCE")).toBeInTheDocument();
+    expect((await screen.findAllByText("VWCE")).length).toBeGreaterThanOrEqual(1);
     expect(fetchMock.mock.calls[0][0]).toBe("/api/auth/login");
     expect(fetchMock.mock.calls[1][0]).toBe("/api/portfolio");
   });

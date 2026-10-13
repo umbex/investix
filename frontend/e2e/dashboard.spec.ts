@@ -3,6 +3,8 @@ import { expect, test } from "@playwright/test";
 const portfolio = {
   valuation_status: "available",
   kpis: { open_cost_eur: "200", market_value_eur: "220", realized_pnl_eur: "0", unrealized_pnl_eur: "20" },
+  allocations: [{ ticker: "VWCE", market_value_eur: "220", weight: "1" }],
+  account_allocations: [{ account: "Directa", open_cost_eur: "200", weight: "1" }],
   positions: [{
     ticker: "VWCE", quantity: "2", open_cost_eur: "200", average_cost_eur: "100", realized_pnl_eur: "0",
     market_value_eur: "220", unrealized_pnl_eur: "20", market_data_status: "available", last_observed_at: "2026-01-04T18:00:00Z",
@@ -26,7 +28,7 @@ test("desktop dashboard filters date range and exposes CSV exports", async ({ pa
   await page.getByLabel("Password").fill("password");
   await page.getByRole("button", { name: "Accedi" }).click();
   await expect(page.getByRole("heading", { name: "Panoramica" })).toBeVisible();
-  await expect(page.getByText("VWCE")).toBeVisible();
+  await expect(page.getByRole("cell", { name: "VWCE", exact: true })).toBeVisible();
   await page.getByLabel("Da").fill("2026-01-01");
   await page.getByLabel("A", { exact: true }).fill("2026-01-31");
   await page.getByRole("button", { name: "Applica" }).click();
@@ -39,6 +41,6 @@ test("mobile dashboard keeps the portfolio and worker status visible", async ({ 
   await page.getByLabel("Utente").fill("investix");
   await page.getByLabel("Password").fill("password");
   await page.getByRole("button", { name: "Accedi" }).click();
-  await expect(page.getByText("VWCE")).toBeVisible();
+  await expect(page.getByRole("cell", { name: "VWCE", exact: true })).toBeVisible();
   await expect(page.getByText("Attivo · provider disabilitato")).toBeVisible();
 });
