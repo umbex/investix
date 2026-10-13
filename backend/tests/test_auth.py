@@ -40,3 +40,11 @@ def test_settings_ignores_docker_only_environment_variables(monkeypatch) -> None
     settings = Settings(session_secret="test-session-secret-with-at-least-32chars")
 
     assert settings.database_url.startswith("postgresql+")
+
+
+def test_settings_exposes_twelve_data_key_only_server_side(monkeypatch) -> None:
+    monkeypatch.setenv("INVESTIX_TWELVE_DATA_API_KEY", "free-test-key")
+
+    settings = Settings(session_secret="test-session-secret-with-at-least-32chars")
+
+    assert settings.twelve_data_api_key == "free-test-key"

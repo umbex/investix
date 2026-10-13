@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     session_secret: str | None = None
     admin_username: str = "investix"
     admin_password: str | None = None
+    twelve_data_api_key: str | None = None
 
     model_config = SettingsConfigDict(env_file=".env", env_prefix="INVESTIX_", extra="ignore")
 
