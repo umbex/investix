@@ -25,6 +25,7 @@ Provare il ripristino solo in un database temporaneo non esistente:
 ```
 
 `restore.sh` rifiuta i database protetti `investix`, `postgres`, `template0` e `template1`; eliminare il database temporaneo solo dopo avere verificato il risultato.
+Il gate locale è `./scripts/test-backup-restore.sh`; per eseguire anche il ciclo PostgreSQL reale usare esplicitamente `RUN_DOCKER_TESTS=1 ./scripts/test-backup-restore.sh`.
 
 I comandi leggono `.env`; in una verifica separata si può impostare `INVESTIX_ENV_FILE=.env.example`.
 
