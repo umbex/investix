@@ -1,7 +1,10 @@
 from fastapi.testclient import TestClient
+import pytest
 
 from app.main import create_app
 from app.settings import get_settings
+from app.settings import Settings
+from pydantic import ValidationError
 
 
 def test_portfolio_requires_authenticated_session(monkeypatch) -> None:
@@ -22,3 +25,8 @@ def test_configured_credentials_create_a_session(monkeypatch) -> None:
 
     assert response.status_code == 204
     assert "session" in response.cookies
+
+
+def test_production_rejects_missing_or_short_session_secret() -> None:
+    with pytest.raises(ValidationError, match="INVESTIX_SESSION_SECRET"):
+        Settings(environment="production", session_secret="short")
