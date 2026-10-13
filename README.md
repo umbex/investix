@@ -10,7 +10,7 @@ cp .env.example .env
 docker compose up --build
 ```
 
-The frontend is bound to `127.0.0.1:5173`; access it privately over Tailscale through the host, not by exposing the container publicly.
+The frontend is bound to `127.0.0.1:5173` and the API to `127.0.0.1:8000`; access them privately over Tailscale through the host, not by exposing containers publicly. See [`docs/operations.md`](docs/operations.md) for backups, restore checks and operating guidance.
 
 ## Required environment variables
 
