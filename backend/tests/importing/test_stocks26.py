@@ -1,4 +1,5 @@
 from pathlib import Path
+from decimal import Decimal
 
 from app.importing.stocks26 import preview_movimenti
 
@@ -34,3 +35,14 @@ def test_import_accepts_italian_date_format(tmp_path: Path) -> None:
     export.write_text(HEADER + "02/01/2026,Directa,VWCE,,Acquisto,2,100,,,,,,VWCE,EUR\n")
 
     assert preview_movimenti(export).rows[0].trade_date.isoformat() == "2026-01-02"
+
+
+def test_import_accepts_italian_quantity_and_eur_price(tmp_path: Path) -> None:
+    export = tmp_path / "movimenti.csv"
+    export.write_text(HEADER + "02/01/2026,Directa,VWCE,,Acquisto,80,00,€ 634,42,,,,,,VWCE,EUR\n")
+
+    # CSV quoting keeps the Italian comma values inside their fields.
+    export.write_text(HEADER + '02/01/2026,Directa,VWCE,,Acquisto,"80,00","€ 634,42",,,,,,VWCE,EUR\n')
+    row = preview_movimenti(export).rows[0]
+    assert row.quantity == Decimal("80")
+    assert row.unit_price_eur == Decimal("634.42")

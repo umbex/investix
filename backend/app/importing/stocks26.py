@@ -48,8 +48,8 @@ def preview_movimenti(source: Path) -> ImportPreview:
                     raise ValueError(f"tipo non mappato: {row['TIPO']}")
                 if any("#" in (row[key] or "") for key in ("QUANTITÀ", "PREZZO EUR")):
                     raise ValueError("formula o errore non importabile")
-                quantity = Decimal(row["QUANTITÀ"])
-                price = Decimal(row["PREZZO EUR"])
+                quantity = _parse_decimal(row["QUANTITÀ"])
+                price = _parse_decimal(row["PREZZO EUR"])
                 if quantity <= 0 or price < 0 or not row["TICKER"] or not row["CONTO"]:
                     raise ValueError("riga incompleta o quantità/prezzo invalidi")
                 rows.append(StagedRow(source_row, _parse_date(row["DATA"]), row["CONTO"], row["TICKER"].upper(), SUPPORTED_TYPES[row["TIPO"]], quantity, price, row["SIMBOLO QUOTA"], row["VALUTA QUOTA"].upper()))
@@ -65,3 +65,8 @@ def _parse_date(value: str) -> date:
         except ValueError:
             pass
     raise ValueError("data non valida")
+
+
+def _parse_decimal(value: str) -> Decimal:
+    normalized = value.replace("€", "").replace("\u00a0", "").strip().replace(".", "").replace(",", ".")
+    return Decimal(normalized)
