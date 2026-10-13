@@ -20,6 +20,9 @@ def test_twelve_data_normalizes_latest_eod_quote_and_preserves_source_metadata()
     assert quote.currency == "EUR"
     assert quote.observed_at == datetime(2026, 10, 12, tzinfo=timezone.utc)
 
+    canonical = adapter.fetch_latest("EQQQ.MI", ticker="EQQQ")
+    assert canonical.ticker == "EQQQ"
+
 
 def test_twelve_data_reports_unknown_symbols_and_rate_limits() -> None:
     unknown = TwelveDataAdapter(api_key="test-key", download=lambda _: '{"code":400,"message":"Invalid symbol"}')

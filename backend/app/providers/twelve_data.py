@@ -20,7 +20,7 @@ class TwelveDataAdapter:
         self._fx_to_eur = fx_to_eur
         self._download = download or _download
 
-    def fetch_latest(self, symbol: str) -> MarketObservation:
+    def fetch_latest(self, symbol: str, *, ticker: str | None = None) -> MarketObservation:
         query = urlencode({"symbol": symbol, "interval": "1day", "outputsize": 1, "apikey": self.api_key})
         try:
             payload = json.loads(self._download(f"https://api.twelvedata.com/time_series?{query}"))
@@ -41,7 +41,7 @@ class TwelveDataAdapter:
                 raise ProviderError(f"Manca il cambio storico {currency}/EUR per {observed_at.date().isoformat()}")
             else:
                 fx_to_eur = self._fx_to_eur(observed_at)
-            return normalize_observation(provider=self.provider_name, ticker=symbol, observed_at=observed_at, raw_price=Decimal(value["close"]), currency=currency, fx_to_eur=fx_to_eur)
+            return normalize_observation(provider=self.provider_name, ticker=ticker or symbol, observed_at=observed_at, raw_price=Decimal(value["close"]), currency=currency, fx_to_eur=fx_to_eur)
         except (KeyError, IndexError, ValueError, InvalidOperation) as error:
             raise ProviderError(f"Risposta Twelve Data non valida: {error}") from error
 
