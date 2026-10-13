@@ -2,6 +2,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.importing.stocks26 import ImportPreview
+from app.importing.reconcile import ReconciliationReport
 from app.models import ImportRow, ImportRun
 from app.schemas.operations import OperationCreate
 from app.services.operations import create_operation
@@ -11,9 +12,11 @@ class FinalizationError(ValueError):
     pass
 
 
-def finalize_preview(session: Session, preview: ImportPreview) -> int:
+def finalize_preview(session: Session, preview: ImportPreview, *, reconciliation: ReconciliationReport | None = None) -> int:
     if preview.errors:
         raise FinalizationError("La preview contiene righe non valide e non può essere finalizzata")
+    if reconciliation is not None and not reconciliation.passed:
+        raise FinalizationError("Riconciliazione non superata: la finalizzazione è bloccata")
     if session.scalar(select(ImportRun).where(ImportRun.source_hash == preview.source_hash)) is not None:
         raise FinalizationError("Questo file è già stato importato")
     run = ImportRun(source_hash=preview.source_hash)
