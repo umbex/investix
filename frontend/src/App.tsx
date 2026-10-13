@@ -1,5 +1,4 @@
 import { AppShell, Badge, Button, Card, Group, MantineProvider, SimpleGrid, Stack, Text, Title } from "@mantine/core";
-import * as echarts from "echarts";
 import { useEffect, useRef } from "react";
 
 import "./styles.css";
@@ -54,15 +53,19 @@ function PortfolioChart() {
   const element = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!element.current) return;
-    const chart = echarts.init(element.current, undefined, { renderer: "svg" });
-    chart.setOption({
-      xAxis: { show: false }, yAxis: { show: false },
-      series: [],
-      graphic: { type: "text", left: "center", top: "middle", style: { text: "Nessuna serie storica disponibile", fill: "#9097a6", fontSize: 14 } },
+    let disposed = false;
+    let chart: { setOption: (option: object) => void; resize: () => void; dispose: () => void } | undefined;
+    void import("echarts").then((echarts) => {
+      if (disposed || !element.current) return;
+      chart = echarts.init(element.current, undefined, { renderer: "svg" });
+      chart.setOption({
+        xAxis: { show: false }, yAxis: { show: false }, series: [],
+        graphic: { type: "text", left: "center", top: "middle", style: { text: "Nessuna serie storica disponibile", fill: "#9097a6", fontSize: 14 } },
+      });
     });
-    const resize = () => chart.resize();
+    const resize = () => chart?.resize();
     window.addEventListener("resize", resize);
-    return () => { window.removeEventListener("resize", resize); chart.dispose(); };
+    return () => { disposed = true; window.removeEventListener("resize", resize); chart?.dispose(); };
   }, []);
   return <div className="chart" ref={element} role="img" aria-label="Grafico del valore del portafoglio: nessuna serie storica disponibile" />;
 }
