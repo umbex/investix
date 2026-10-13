@@ -25,3 +25,12 @@ def test_worker_refresh_once_skips_cleanly_when_provider_is_disabled() -> None:
     settings = Settings(session_secret="test-session-secret-with-at-least-32chars")
 
     assert refresh_once(settings, session_factory=lambda: None) == {"refreshed": [], "failed": {}}
+
+
+def test_eod_schedule_runs_each_market_once_at_its_local_time() -> None:
+    from app.worker import due_market_jobs
+    from datetime import datetime
+
+    assert due_market_jobs(datetime(2026, 10, 12, 18, 0), last_runs={}) == ["EU"]
+    assert due_market_jobs(datetime(2026, 10, 12, 16, 30), last_runs={}) == ["US"]
+    assert due_market_jobs(datetime(2026, 10, 12, 18, 0), last_runs={"EU": date(2026, 10, 12)}) == []

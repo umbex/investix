@@ -13,6 +13,12 @@ from app.settings import Settings, get_settings
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+MARKET_SCHEDULES = {"EU": (18, 0), "US": (16, 30)}
+
+
+def due_market_jobs(now, *, last_runs: dict[str, date]) -> list[str]:
+    """Return at most one daily job per market; callers provide local market time."""
+    return [market for market, scheduled in MARKET_SCHEDULES.items() if (now.hour, now.minute) == scheduled and last_runs.get(market) != now.date()]
 
 
 def build_twelve_data_adapter(settings: Settings, *, fetch_fx: Callable[[date], Decimal] | None = None) -> TwelveDataAdapter | None:
