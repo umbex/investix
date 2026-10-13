@@ -3,7 +3,7 @@
 import logging
 import time
 from collections.abc import Callable
-from datetime import date
+from datetime import date, datetime, timezone
 from decimal import Decimal
 from zoneinfo import ZoneInfo
 
@@ -52,10 +52,36 @@ def refresh_once(settings: Settings, *, session_factory: Callable[[], object]) -
         return refresh_instruments(session, lambda symbol, ticker: provider.fetch_latest(symbol, ticker=ticker))
 
 
+def run_scheduled_once(
+    settings: Settings,
+    *,
+    now_utc: datetime,
+    last_runs: dict[str, date],
+    session_factory: Callable[[], object],
+) -> dict[str, dict[str, list[str] | dict[str, str]]]:
+    """Run each due market once and record the local calendar date on success."""
+    results: dict[str, dict[str, list[str] | dict[str, str]]] = {}
+    for market in due_jobs_at(now_utc, last_runs=last_runs):
+        try:
+            results[market] = refresh_once(settings, session_factory=session_factory)
+        except Exception:
+            logger.exception("Scheduled %s market refresh failed", market)
+            continue
+        local_date = now_utc.astimezone(MARKET_TIMEZONES[market]).date()
+        last_runs[market] = local_date
+    return results
+
+
 def run() -> None:
-    provider = build_twelve_data_adapter(get_settings())
+    from app.db import create_session_factory
+
+    settings = get_settings()
+    provider = build_twelve_data_adapter(settings)
     logger.info("Investix worker started; Twelve Data EOD provider %s", "configured" if provider else "disabled")
+    last_runs: dict[str, date] = {}
+    session_factory = create_session_factory()
     while True:
+        run_scheduled_once(settings, now_utc=datetime.now(timezone.utc), last_runs=last_runs, session_factory=session_factory)
         time.sleep(60)
 
 

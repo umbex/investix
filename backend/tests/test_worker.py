@@ -42,3 +42,20 @@ def test_eod_schedule_converts_utc_to_each_market_timezone() -> None:
 
     assert due_jobs_at(datetime(2026, 10, 12, 16, 0, tzinfo=timezone.utc), last_runs={}) == ["EU"]
     assert due_jobs_at(datetime(2026, 10, 12, 20, 30, tzinfo=timezone.utc), last_runs={}) == ["US"]
+
+
+def test_scheduled_refresh_marks_due_market_after_success() -> None:
+    from app.worker import run_scheduled_once
+
+    settings = Settings(session_secret="test-session-secret-with-at-least-32chars")
+    last_runs: dict[str, date] = {}
+
+    result = run_scheduled_once(
+        settings,
+        now_utc=datetime(2026, 10, 12, 16, 0, tzinfo=timezone.utc),
+        last_runs=last_runs,
+        session_factory=lambda: None,
+    )
+
+    assert result == {"EU": {"refreshed": [], "failed": {}}}
+    assert last_runs == {"EU": date(2026, 10, 12)}
