@@ -94,4 +94,12 @@ export const api = {
     body: JSON.stringify(payload),
   }),
   exportUrl: (ticker?: string) => apiUrl("/portfolio/export.csv" + (ticker ? "?" + new URLSearchParams({ ticker }) : "")),
+  performanceExportUrl: (ticker?: string, dateFrom?: string, dateTo?: string) => {
+    const params = new URLSearchParams();
+    if (ticker) params.set("ticker", ticker);
+    if (dateFrom) params.set("date_from", dateFrom);
+    if (dateTo) params.set("date_to", dateTo);
+    const query = params.toString();
+    return apiUrl("/performance/export.csv" + (query ? `?${query}` : ""));
+  },
 };
