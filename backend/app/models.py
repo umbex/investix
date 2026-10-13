@@ -1,4 +1,6 @@
-from sqlalchemy import DateTime, ForeignKey, Integer, Numeric, String, Text, func
+from datetime import date, datetime
+
+from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Integer, Numeric, String, Text, func
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -9,7 +11,7 @@ class Base(DeclarativeBase):
 class Identified(Base):
     __abstract__ = True
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    created_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
 class User(Identified):
@@ -34,12 +36,20 @@ class Operation(Identified):
     instrument_id: Mapped[int] = mapped_column(ForeignKey("instruments.id"))
     kind: Mapped[str] = mapped_column(String(32))
     quantity: Mapped[Numeric] = mapped_column(Numeric(24, 10))
+    unit_price_eur: Mapped[Numeric] = mapped_column(Numeric(24, 10), server_default="0")
+    fee_eur: Mapped[Numeric | None] = mapped_column(Numeric(24, 10), nullable=True)
+    dividend_eur: Mapped[Numeric | None] = mapped_column(Numeric(24, 10), nullable=True)
+    trade_date: Mapped[date] = mapped_column(Date, server_default=func.current_date())
+    source_order: Mapped[int] = mapped_column(Integer, server_default="0")
+    cancelled: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
 
 
 class OperationRevision(Identified):
     __tablename__ = "operation_revisions"
     operation_id: Mapped[int] = mapped_column(ForeignKey("operations.id"))
     reason: Mapped[str] = mapped_column(Text())
+    action: Mapped[str] = mapped_column(String(32), server_default="REVISE")
+    supersedes_operation_id: Mapped[int | None] = mapped_column(ForeignKey("operations.id"), nullable=True)
 
 
 class Observation(Identified):
