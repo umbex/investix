@@ -26,6 +26,26 @@ def test_performance_api_returns_daily_series_and_twr(monkeypatch) -> None:
     assert Decimal(payload["total_return"]) == Decimal("0.1")
 
 
+def test_performance_api_filters_points_and_benchmarks_by_date(monkeypatch) -> None:
+    client = client_with_database(monkeypatch)
+    create_buy(client)
+    session = client.app.state.session_factory()
+    instrument = session.query(Instrument).filter_by(ticker="VWCE").one()
+    session.add_all(
+        [
+            Observation(instrument_id=instrument.id, provider="fixture", price=Decimal("100"), raw_price=Decimal("100"), currency="EUR", fx_to_eur=Decimal("1"), observed_at=datetime(2026, 1, 2, tzinfo=timezone.utc)),
+            Observation(instrument_id=instrument.id, provider="fixture", price=Decimal("105"), raw_price=Decimal("105"), currency="EUR", fx_to_eur=Decimal("1"), observed_at=datetime(2026, 1, 3, tzinfo=timezone.utc)),
+            Observation(instrument_id=instrument.id, provider="fixture", price=Decimal("110"), raw_price=Decimal("110"), currency="EUR", fx_to_eur=Decimal("1"), observed_at=datetime(2026, 1, 4, tzinfo=timezone.utc)),
+        ]
+    )
+    session.commit()
+
+    response = client.get("/api/performance?date_from=2026-01-03&date_to=2026-01-04")
+
+    assert response.status_code == 200
+    assert [point["date"] for point in response.json()["points"]] == ["2026-01-03", "2026-01-04"]
+
+
 def test_performance_api_returns_active_price_return_benchmark_on_the_same_dates(monkeypatch) -> None:
     client = client_with_database(monkeypatch)
     create_buy(client)

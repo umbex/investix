@@ -79,7 +79,14 @@ export const api = {
     body: JSON.stringify({ username, password }),
   }),
   portfolio: (ticker?: string) => request<PortfolioSummary>("/portfolio" + (ticker ? "?" + new URLSearchParams({ ticker }) : "")),
-  performance: (ticker?: string) => request<PerformanceSummary>("/performance" + (ticker ? "?" + new URLSearchParams({ ticker }) : "")),
+  performance: (ticker?: string, dateFrom?: string, dateTo?: string) => {
+    const params = new URLSearchParams();
+    if (ticker) params.set("ticker", ticker);
+    if (dateFrom) params.set("date_from", dateFrom);
+    if (dateTo) params.set("date_to", dateTo);
+    const query = params.toString();
+    return request<PerformanceSummary>("/performance" + (query ? `?${query}` : ""));
+  },
   operations: () => request<{ items: Operation[]; total: number }>("/operations"),
   createOperation: (payload: Record<string, unknown>) => request<Operation>("/operations", {
     method: "POST",
