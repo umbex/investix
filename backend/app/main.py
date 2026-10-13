@@ -3,6 +3,7 @@ from starlette.middleware.sessions import SessionMiddleware
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.auth import router as auth_router
+from app.api.imports import router as imports_router
 from app.api.operations import router as operations_router
 from app.api.portfolio import router as portfolio_router
 from app.auth import require_session
@@ -15,6 +16,7 @@ def create_app() -> FastAPI:
     application.add_middleware(SessionMiddleware, secret_key=settings.session_secret, https_only=False)
     application.add_middleware(CORSMiddleware, allow_origins=["http://127.0.0.1:5173", "http://localhost:5173"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
     application.include_router(auth_router)
+    application.include_router(imports_router)
     application.include_router(operations_router)
     application.include_router(portfolio_router)
 
