@@ -33,6 +33,13 @@ export type PortfolioSummary = {
   valuation_status: "available" | "unavailable_without_observation";
 };
 
+export type WorkerHealth = {
+  status: "ok" | "unknown" | "not_configured";
+  updated_at?: string;
+  provider?: string;
+  detail?: string;
+};
+
 export type PerformanceSummary = {
   points: { date: string; value_eur: string; external_flow_eur: string; cumulative_return: string | null }[];
   total_return: string | null;
@@ -102,4 +109,5 @@ export const api = {
     const query = params.toString();
     return apiUrl("/performance/export.csv" + (query ? `?${query}` : ""));
   },
+  workerHealth: () => request<WorkerHealth>("/health/worker"),
 };
