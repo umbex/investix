@@ -1,0 +1,11 @@
+Metadata-Version: 2.4
+Name: investix-api
+Version: 0.1.0
+Summary: Private portfolio management API
+Requires-Python: >=3.12
+Requires-Dist: fastapi==0.128.0
+Requires-Dist: pydantic-settings==2.12.0
+Requires-Dist: uvicorn[standard]==0.40.0
+Provides-Extra: dev
+Requires-Dist: httpx==0.28.1; extra == "dev"
+Requires-Dist: pytest==9.0.2; extra == "dev"
