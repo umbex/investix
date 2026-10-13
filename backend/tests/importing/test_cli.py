@@ -27,6 +27,15 @@ def test_cli_refuses_finalize_when_preview_has_errors(monkeypatch, capsys, tmp_p
     assert "Riga 5" in capsys.readouterr().out
 
 
+def test_cli_requires_a_reconciliation_report_to_finalize(monkeypatch, capsys, tmp_path: Path) -> None:
+    source = tmp_path / "movimenti.csv"
+    source.write_text("placeholder")
+    monkeypatch.setattr(cli, "preview_movimenti", lambda _: ImportPreview("abc123", [], []))
+
+    assert cli.main(["--finalize", str(source)]) == 3
+    assert "report" in capsys.readouterr().out.lower()
+
+
 def test_reconcile_cli_can_write_a_json_report(monkeypatch, capsys, tmp_path: Path) -> None:
     from app.importing import reconcile_cli
     from app.importing.ledger_reconciliation import LedgerReconciliation
