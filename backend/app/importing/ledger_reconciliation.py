@@ -94,6 +94,7 @@ def reconcile_preview_with_ledger(session: Session, preview: ImportPreview) -> L
     differences.update({f"realized_pnl_eur|{key}": values for key, values in _differences(pnl_ledger, pnl_reference, tolerance.realized_pnl_eur).items()})
     average_differences = _differences(average_ledger, average_reference, tolerance.cost_eur)
     differences.update({f"average_cost_eur|{key}": values for key, values in average_differences.items()})
+    dividend_coverage = "available" if any(operation.kind == "DIVIDEND" for operations in reference_operations.values() for operation in operations) or any(operation.kind == "DIVIDEND" for operations in ledger_operations.values() for operation in operations) else "not_comparable"
     return LedgerReconciliation(
         reference_quantities=reference_quantities,
         ledger_quantities=ledger_quantities,
@@ -109,6 +110,7 @@ def reconcile_preview_with_ledger(session: Session, preview: ImportPreview) -> L
         reference_average_cost_eur=average_reference,
         ledger_average_cost_eur=average_ledger,
         average_cost_status="matched" if not average_differences else "mismatch",
+        coverage={"dividends": dividend_coverage, "benchmarks": "not_comparable"},
     )
 
 
