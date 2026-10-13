@@ -1,6 +1,8 @@
 """Long-running EOD worker; no public provider is enabled by default."""
 
 import logging
+import json
+import os
 import time
 from collections.abc import Callable
 from datetime import date, datetime, timezone
@@ -72,6 +74,31 @@ def run_scheduled_once(
     return results
 
 
+def write_worker_status(
+    settings: Settings,
+    *,
+    now_utc: datetime,
+    last_runs: dict[str, date],
+    results: dict[str, dict[str, list[str] | dict[str, str]]],
+) -> None:
+    """Publish a non-secret heartbeat when an explicit status path is configured."""
+    if not settings.worker_status_file:
+        return
+    destination = settings.worker_status_file
+    payload = {
+        "status": "ok",
+        "updated_at": now_utc.isoformat(),
+        "provider": "twelve_data" if settings.twelve_data_api_key else "disabled",
+        "last_runs": {market: day.isoformat() for market, day in last_runs.items()},
+        "last_results": results,
+    }
+    temporary = f"{destination}.partial"
+    with open(temporary, "w", encoding="utf-8") as handle:
+        json.dump(payload, handle, ensure_ascii=False, sort_keys=True)
+        handle.write("\n")
+    os.replace(temporary, destination)
+
+
 def run() -> None:
     from app.db import create_session_factory
 
@@ -81,7 +108,9 @@ def run() -> None:
     last_runs: dict[str, date] = {}
     session_factory = create_session_factory()
     while True:
-        run_scheduled_once(settings, now_utc=datetime.now(timezone.utc), last_runs=last_runs, session_factory=session_factory)
+        now_utc = datetime.now(timezone.utc)
+        results = run_scheduled_once(settings, now_utc=now_utc, last_runs=last_runs, session_factory=session_factory)
+        write_worker_status(settings, now_utc=now_utc, last_runs=last_runs, results=results)
         time.sleep(60)
 
 

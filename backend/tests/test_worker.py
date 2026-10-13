@@ -59,3 +59,16 @@ def test_scheduled_refresh_marks_due_market_after_success() -> None:
 
     assert result == {"EU": {"refreshed": [], "failed": {}}}
     assert last_runs == {"EU": date(2026, 10, 12)}
+
+
+def test_worker_status_is_atomic_and_contains_no_credentials(tmp_path) -> None:
+    from app.worker import write_worker_status
+
+    status_path = tmp_path / "worker-status.json"
+    settings = Settings(session_secret="test-session-secret-with-at-least-32chars", worker_status_file=str(status_path), twelve_data_api_key="secret-that-must-not-be-written")
+    write_worker_status(settings, now_utc=datetime(2026, 10, 12, 16, 0, tzinfo=timezone.utc), last_runs={"EU": date(2026, 10, 12)}, results={})
+
+    content = status_path.read_text()
+    assert "secret-that-must-not-be-written" not in content
+    assert '"provider": "twelve_data"' in content
+    assert not status_path.with_suffix(".json.partial").exists()

@@ -1,3 +1,6 @@
+import json
+from pathlib import Path
+
 from fastapi import Depends, FastAPI
 from starlette.middleware.sessions import SessionMiddleware
 from fastapi.middleware.cors import CORSMiddleware
@@ -27,6 +30,18 @@ def create_app() -> FastAPI:
     @application.get("/api/health")
     def health() -> dict[str, str]:
         return {"status": "ok"}
+
+    @application.get("/api/health/worker")
+    def worker_health() -> dict:
+        if not settings.worker_status_file:
+            return {"status": "not_configured"}
+        status_path = Path(settings.worker_status_file)
+        if not status_path.exists():
+            return {"status": "unknown", "detail": "heartbeat_missing"}
+        try:
+            return json.loads(status_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            return {"status": "unknown", "detail": "heartbeat_unreadable"}
 
     return application
 
