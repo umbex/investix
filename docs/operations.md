@@ -16,6 +16,8 @@ Il backup è un dump PostgreSQL compresso:
 ./scripts/backup.sh /absolute/path/investix-$(date +%F).sql.gz
 ```
 
+La retention non cancella nulla per default: elencare i dump oltre soglia con `./scripts/prune-backups.sh /absolute/path 30`; usare `--apply` solo dopo aver verificato l’elenco.
+
 Provare il ripristino solo in un database temporaneo non esistente:
 
 ```sh
