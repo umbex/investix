@@ -5,6 +5,7 @@ import time
 from collections.abc import Callable
 from datetime import date
 from decimal import Decimal
+from zoneinfo import ZoneInfo
 
 from app.providers.ecb import EcbUsdEurAdapter
 from app.providers.twelve_data import TwelveDataAdapter
@@ -14,11 +15,22 @@ from app.settings import Settings, get_settings
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 MARKET_SCHEDULES = {"EU": (18, 0), "US": (16, 30)}
+MARKET_TIMEZONES = {"EU": ZoneInfo("Europe/Rome"), "US": ZoneInfo("America/New_York")}
 
 
 def due_market_jobs(now, *, last_runs: dict[str, date]) -> list[str]:
     """Return at most one daily job per market; callers provide local market time."""
     return [market for market, scheduled in MARKET_SCHEDULES.items() if (now.hour, now.minute) == scheduled and last_runs.get(market) != now.date()]
+
+
+def due_jobs_at(now_utc, *, last_runs: dict[str, date]) -> list[str]:
+    """Evaluate each scheduled job in the timezone of its own market."""
+    due: list[str] = []
+    for market, timezone in MARKET_TIMEZONES.items():
+        local = now_utc.astimezone(timezone)
+        if market in due_market_jobs(local, last_runs=last_runs):
+            due.append(market)
+    return due
 
 
 def build_twelve_data_adapter(settings: Settings, *, fetch_fx: Callable[[date], Decimal] | None = None) -> TwelveDataAdapter | None:

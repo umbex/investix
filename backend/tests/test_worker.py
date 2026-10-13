@@ -34,3 +34,11 @@ def test_eod_schedule_runs_each_market_once_at_its_local_time() -> None:
     assert due_market_jobs(datetime(2026, 10, 12, 18, 0), last_runs={}) == ["EU"]
     assert due_market_jobs(datetime(2026, 10, 12, 16, 30), last_runs={}) == ["US"]
     assert due_market_jobs(datetime(2026, 10, 12, 18, 0), last_runs={"EU": date(2026, 10, 12)}) == []
+
+
+def test_eod_schedule_converts_utc_to_each_market_timezone() -> None:
+    from app.worker import due_jobs_at
+    from datetime import timezone
+
+    assert due_jobs_at(datetime(2026, 10, 12, 16, 0, tzinfo=timezone.utc), last_runs={}) == ["EU"]
+    assert due_jobs_at(datetime(2026, 10, 12, 20, 30, tzinfo=timezone.utc), last_runs={}) == ["US"]
