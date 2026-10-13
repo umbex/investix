@@ -1,12 +1,6 @@
-import { AppShell, Badge, Button, Card, Group, MantineProvider, SimpleGrid, Stack, Table, Text, Title } from "@mantine/core";
+import { AppShell, Badge, Button, Card, Group, MantineProvider, SimpleGrid, Stack, Text, Title } from "@mantine/core";
 
 import "./styles.css";
-
-const positions = [
-  ["VWCE", "42,00", "€ 5.904", "+€ 684", "33%"],
-  ["AAPL", "12,00", "€ 2.214", "+€ 305", "12%"],
-  ["EQQQ", "18,00", "€ 1.896", "+€ 196", "11%"],
-];
 
 export function App() {
   return (
@@ -25,9 +19,9 @@ export function App() {
               <Text size="sm" c="dimmed">Dati EOD · ultimo aggiornamento: non disponibile</Text>
             </Group>
             <SimpleGrid cols={{ base: 1, xs: 2, md: 4 }} spacing="md">
-              <Metric label="Valore portafoglio" value="€ 17.842" note="Valore stimato" />
-              <Metric label="P&L totale" value="+€ 1.842" note="Include realizzato" positive />
-              <Metric label="Rendimento TWR" value="+12,4%" note="Periodo disponibile" positive />
+              <Metric label="Valore portafoglio" value="—" note="Importazione richiesta" />
+              <Metric label="P&L totale" value="—" note="Nessuna posizione valorizzata" />
+              <Metric label="Rendimento TWR" value="N/D" note="Serie storica non disponibile" />
               <Metric label="Copertura dati" value="Da importare" note="Quotazioni storiche" />
             </SimpleGrid>
             <SimpleGrid cols={{ base: 1, md: 3 }} spacing="md">
@@ -38,7 +32,7 @@ export function App() {
               </Card>
               <Card withBorder radius="md"><Title order={3}>Stato dati</Title><Stack mt="md" gap="sm"><Status label="Import STOCKS-26" value="In preparazione" /><Status label="Provider prezzi" value="CSV manuale" /><Status label="Ultima quotazione" value="Non disponibile" /></Stack></Card>
             </SimpleGrid>
-            <Card withBorder radius="md" className="positions"><Group justify="space-between"><Title order={3}>Posizioni</Title><Button variant="subtle" size="xs">Registro operazioni</Button></Group><Table.ScrollContainer minWidth={540}><Table striped highlightOnHover mt="md"><Table.Thead><Table.Tr><Table.Th>Ticker</Table.Th><Table.Th>Quantità</Table.Th><Table.Th>Valore EUR</Table.Th><Table.Th>P&L aperto</Table.Th><Table.Th>Peso</Table.Th></Table.Tr></Table.Thead><Table.Tbody>{positions.map((row) => <Table.Tr key={row[0]}>{row.map((cell) => <Table.Td key={cell}>{cell}</Table.Td>)}</Table.Tr>)}</Table.Tbody></Table></Table.ScrollContainer></Card>
+              <Card withBorder radius="md" className="positions"><Group justify="space-between"><Title order={3}>Posizioni</Title><Button variant="subtle" size="xs">Registro operazioni</Button></Group><Text c="dimmed" mt="md">Nessuna posizione disponibile: importa prima un export STOCKS-26 validato.</Text></Card>
           </Stack>
         </AppShell.Main>
       </AppShell>
