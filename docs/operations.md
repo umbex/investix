@@ -29,5 +29,6 @@ I comandi leggono `.env`; in una verifica separata si può impostare `INVESTIX_E
 ## Sicurezza e dati
 
 - Google Sheets viene letto solo durante l’import iniziale da file esportato: non configurare credenziali Sheets nell’app.
+- Per verificare in seguito l’import senza riaprire il foglio, montare il CSV congelato nel container ed eseguire `python -m app.importing.reconcile_cli /data/movimenti.csv`; un disallineamento ticker/conto interrompe il report con dettaglio.
 - Il worker non abilita provider pubblici di default. Il CSV manuale mantiene l’uso personale a basso volume e la provenienza del dato.
 - Commissioni e dividendi assenti restano sconosciuti; non vanno convertiti in zero nell’operatività.
