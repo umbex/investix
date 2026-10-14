@@ -33,7 +33,7 @@ describe("App", () => {
         status: 200,
         json: async () => ({
           valuation_status: "unavailable_without_observation",
-          kpis: { open_cost_eur: "200", market_value_eur: null, realized_pnl_eur: "0", unrealized_pnl_eur: null },
+          kpis: { open_cost_eur: "200", market_value_eur: "1234.56", realized_pnl_eur: "0", unrealized_pnl_eur: null },
           positions: [{
             ticker: "VWCE", quantity: "2", open_cost_eur: "200", average_cost_eur: "100", realized_pnl_eur: "0",
             market_value_eur: null, unrealized_pnl_eur: null, market_data_status: "missing",
@@ -61,6 +61,7 @@ describe("App", () => {
     const stateHeading = screen.getByRole("heading", { name: "Stato dati" });
     const twrLabel = screen.getByText("Rendimento TWR");
     expect(quotesHeading).toBeInTheDocument();
+    expect(screen.getByText(/1\.235/)).toBeInTheDocument();
     expect(twrLabel.compareDocumentPosition(quotesHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(quotesHeading.compareDocumentPosition(positionsHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(positionsHeading.compareDocumentPosition(valueHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();

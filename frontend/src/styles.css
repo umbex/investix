@@ -3,7 +3,7 @@
 .login { min-height: 100vh; display: grid; place-items: center; padding: 16px; background: #10151d; }.login > * { width: min(100%, 400px); }
 .topbar { background: #151c27; border-bottom: 1px solid #273142; }
 .dashboard { max-width: 1280px; margin: 0 auto; padding-bottom: 32px; }
-.metric { font-size: clamp(1.45rem, 3vw, 2rem); font-weight: 700; margin: 4px 0; font-variant-numeric: tabular-nums; }
+.metric { font-size: clamp(1.1rem, 2vw, 1.5rem); font-weight: 700; margin: 4px 0; font-variant-numeric: tabular-nums; }
 .positive { color: #3ddc97; }
 .chart-card { min-width: 0; }
 .chart { height: 200px; margin: 18px 0 8px; background: linear-gradient(180deg, rgba(34, 211, 238, .12), transparent); border-radius: 8px; overflow: hidden; }
