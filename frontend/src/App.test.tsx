@@ -69,6 +69,7 @@ describe("App", () => {
     expect(benchmarkHeading.compareDocumentPosition(stateHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect((await screen.findAllByText("VWCE")).length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText("Today P&L")).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: /Mercato (aperto|chiuso)/ })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Allocazione" })).not.toBeInTheDocument();
     expect(screen.getAllByLabelText("Ticker")[0]).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Posizioni CSV" })).not.toBeInTheDocument();
