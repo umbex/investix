@@ -1,33 +1,130 @@
 # Investix
 
-Versione applicativa: `0.3.0` (SemVer; sorgente: [`VERSION`](VERSION)).
+Investix is a private portfolio-tracking application for reconstructing a securities ledger, monitoring current positions, and reading portfolio performance in EUR. It is designed for personal use on a trusted LAN/Tailscale network, with PostgreSQL as the authoritative runtime store.
 
-Private portfolio management application. The design and implementation plan are in `docs/superpowers/`.
+**Current version:** 0.3.1 ([Semantic Versioning](https://semver.org/))
 
-## Local setup
+## What it does
 
-```sh
-cp .env.example .env
-# Set a non-default POSTGRES_PASSWORD and INVESTIX_SESSION_SECRET.
-docker compose up --build
-```
+- Imports and maintains a transaction ledger with buys, sells, transfers, splits, dividends, fees, and corrections.
+- Reconstructs open quantity, average cost, realized P&L, and unrealized P&L using average-cost accounting.
+- Shows dashboard KPIs, current positions, account/ticker allocations, historical performance, and benchmark comparison.
+- Displays current quotes with change, Today P&L, market-open status, and a compact per-ticker trend.
+- Supports ticker lookup before instrument entry and stores the preferred listing, venue, currency, and provider symbol.
+- Provides local UI preferences for quote refresh, chart history, KPI visibility, and KPI order.
+- Runs EOD market-data refreshes in a separate worker and keeps live quote polling on-demand while the dashboard is open.
 
-The frontend is bound to `127.0.0.1:5173` and the API to `127.0.0.1:8000`; access them privately over Tailscale through the host, not by exposing containers publicly. See [`docs/operations.md`](docs/operations.md) for backups, restore checks and operating guidance.
+Market data is informational only. Investix does not guarantee that prices are complete, timely, or accurate; always reconcile against the broker or an authoritative source.
 
-## Required environment variables
+## Architecture
 
-- `POSTGRES_PASSWORD`
-- `INVESTIX_SESSION_SECRET`
-- `INVESTIX_ADMIN_PASSWORD`
+    Browser (React + Vite + Mantine + ECharts)
+                    |
+                    v
+            FastAPI application  ---->  PostgreSQL
+                    ^                       ^
+                    |                       |
+            EOD / provider worker ----------+
 
-## Optional environment variables
+- frontend/: React single-page application, responsive dashboard, login, settings, and operations register.
+- backend/: FastAPI API, SQLAlchemy models, ledger domain, imports, provider adapters, and worker.
+- data/: local import/reference material; it is not a runtime dependency for normal reads.
+- docs/operations.md: backup, restore, deployment, and operational guidance.
+- PRD.md and GOOGLE_SHEET_REFERENCE.md: product and source-data context.
 
-- `POSTGRES_DB` (default `investix`)
-- `POSTGRES_USER` (default `investix`)
-- `INVESTIX_DATABASE_URL` (default points to the Compose database)
+The browser never receives the Twelve Data API key. Historical observations and KPI calculations use data persisted by the API/worker; live quotes are fetched server-side and are not written to the historical observations table.
 
-## Dati di mercato
+## Quick start with Docker Compose
 
-- Il catalogo dello strumento conserva ISIN e listing preferito: per `EQQQ` (ISIN `IE0032077012`) il listing configurato è `EQQQ.MI`, Borsa Italiana, EUR. Il ticker non identifica da solo una borsa o una valuta.
-- I cambi USD/EUR futuri possono essere letti lato server dall'adapter ECB (`ecb-reference`), che conserva il tasso di riferimento normalizzato in EUR per USD. Non è abilitato automaticamente dal worker.
-- Lo snapshot storico iniziale resta un file locale congelato: Google Sheets non è una dipendenza operativa. La serie storica EQQQ già importata da Londra resta valida come fallback normalizzato GBX→EUR finché non è disponibile una serie EUR con copertura e controlli equivalenti.
+Requirements: Docker Engine/Desktop with Compose v2.
+
+    cp .env.example .env
+    # Replace every placeholder secret in .env.
+    docker compose up -d --build
+
+Open http://127.0.0.1:5173. The API is available at http://127.0.0.1:8000, including /docs for generated OpenAPI documentation.
+
+The Compose file exposes the web and API on the host for trusted-LAN use. Do not publish these ports directly to the public Internet; use a private reverse proxy or Tailscale policy instead.
+
+Useful commands:
+
+    docker compose ps
+    docker compose logs -f api
+    docker compose logs -f worker
+    docker compose down
+
+## Configuration
+
+Copy .env.example and keep .env uncommitted.
+
+Required:
+
+- POSTGRES_PASSWORD: database password.
+- INVESTIX_SESSION_SECRET: at least 32 random characters.
+- INVESTIX_ADMIN_PASSWORD: password for the configured admin user.
+
+Optional:
+
+- POSTGRES_DB, POSTGRES_USER, INVESTIX_DATABASE_URL: database defaults are suitable for Compose.
+- INVESTIX_ADMIN_USERNAME: defaults to investix.
+- INVESTIX_DEV_AUTH_BYPASS=true: development-only login bypass. Never enable it in production.
+- INVESTIX_TWELVE_DATA_API_KEY: enables Twelve Data for EOD and live quotes. Keep it server-side.
+- INVESTIX_LIVE_REFRESH_MINUTES, INVESTIX_LIVE_BATCH_SIZE, INVESTIX_LIVE_CREDITS_PER_MINUTE, INVESTIX_LIVE_DAILY_CREDITS, INVESTIX_LIVE_DAILY_RESERVE_PERCENT, INVESTIX_LIVE_SESSION_IDLE_MINUTES: live-quote quota and polling policy.
+
+The Twelve Data free-plan safeguards batch at most eight symbols per request, cache results, reserve daily credits, and stop polling closed markets where possible. If the provider quota is exhausted, the API preserves the last valid quote and the UI asks the user to wait for the next provider window instead of showing a blocking error.
+
+## Application flow
+
+1. Log in, or use the development bypass only on a private development instance.
+2. Review the dashboard KPIs and current quotes.
+3. Use the ticker and account filters for portfolio views; the Today P&L total remains portfolio-wide for the selected account context.
+4. Use Registro to add operations or correct/cancel an existing entry through the audit-preserving workflow.
+5. Use Impostazioni to choose chart/quote ranges, live refresh, and KPI visibility/order. These preferences are local to the browser and do not require a service restart.
+
+The dashboard uses Italian number formatting: comma for decimals, dot for thousands, and EUR values. KPI amounts are compacted as K€ (for example +1,25K€).
+
+## API surface
+
+All protected endpoints require the session created by /api/auth/login, unless development bypass is enabled.
+
+- GET /api/health and GET /api/health/worker: application and worker status.
+- GET /api/portfolio: positions, allocations, and KPI summary; supports ticker/account filters.
+- GET /api/quotes: persisted historical quote series.
+- GET /api/live: on-demand live quote batch with freshness and quota metadata.
+- GET /api/performance: TWR series and configured benchmark comparison.
+- GET and POST /api/operations, plus /api/operations/{id}/revise and /api/operations/{id}/cancel: audited ledger workflow.
+- GET /api/lookup: provider-backed instrument lookup used during entry.
+- GET /api/benchmarks and PUT /api/benchmarks/{ticker}: benchmark catalog management.
+
+## Development and verification
+
+Frontend:
+
+    cd frontend
+    npm ci
+    npm test
+    npm run build
+
+Backend (from the backend directory so the package/test imports resolve consistently):
+
+    cd backend
+    ../.venv/bin/python -m pytest -q
+
+The backend test suite expects a reachable test database for integration tests. git diff --check is also required before committing.
+
+## Backups and operations
+
+Use the supplied scripts for PostgreSQL dumps and non-destructive restore checks:
+
+    ./scripts/backup.sh /absolute/path/investix-$(date +%F).sql.gz
+    ./scripts/restore.sh /absolute/path/investix-2026-10-14.sql.gz investix_restore_check
+
+Read docs/operations.md before changing retention, restoring data, or exposing the service on another network. The database volume is named investix-postgres; deleting it destroys the runtime ledger unless a verified backup exists.
+
+## Current scope and future work
+
+The current release is intentionally a single private portfolio. Multi-portfolio support is documented as a future design in docs/superpowers/plans/2026-10-14-multi-portfolio.md. Other implementation plans and decisions are kept under docs/superpowers/.
+
+## License and disclaimer
+
+This repository is intended for private/personal use. No investment advice is provided. Market data can be delayed, incomplete, or wrong; verify important values independently before making financial decisions.
