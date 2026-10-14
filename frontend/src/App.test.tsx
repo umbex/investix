@@ -113,4 +113,32 @@ describe("App", () => {
     expect(await screen.findByRole("button", { name: "Edit" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Cancel" })).toBeInTheDocument();
   });
+
+  it("shows watchlist instruments and benchmark selection in Settings", async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ bypass: true }) })
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ valuation_status: "unavailable_without_observation", kpis: { open_cost_eur: "0", market_value_eur: null, realized_pnl_eur: "0", unrealized_pnl_eur: null }, positions: [], allocations: [], account_allocations: [] }) })
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ points: [], total_return: null, methodology: "TWR", benchmarks: [] }) })
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ status: "ok" }) })
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ days: 90, items: [] }) })
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ valuation_status: "unavailable_without_observation", kpis: { open_cost_eur: "0", market_value_eur: null, realized_pnl_eur: "0", unrealized_pnl_eur: null }, positions: [], allocations: [], account_allocations: [] }) })
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ status: "ok" }) })
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ([{ ticker: "URTH", quote_symbol: "URTH", quote_venue: "NYSE", quote_currency: "USD", watch: true, has_position: false }]) })
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ([{ name: "MSCI World", ticker: "URTH", quote_symbol: "URTH", quote_venue: "NYSE", quote_currency: "USD", methodology: "price_return", active: true }]) })
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ status: "ok", items: [{ symbol: "RACE", name: "Ferrari N.V.", exchange: "NYSE", currency: "USD", type: "" }, { symbol: "RACE", name: "Ferrari N.V.", exchange: "MTA", currency: "EUR", type: "" }] }) });
+    vi.stubGlobal("fetch", fetchMock);
+    render(<App />);
+
+    await waitFor(() => expect(screen.getByRole("heading", { name: "Quotes" })).toBeInTheDocument());
+    fireEvent.click(screen.getByRole("button", { name: "Settings" }));
+
+    expect(await screen.findByRole("heading", { name: "Watchlist" })).toBeInTheDocument();
+    expect(screen.getAllByText("URTH").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByRole("heading", { name: "Benchmarks" })).toBeInTheDocument();
+    expect(screen.getAllByLabelText("Active benchmark").length).toBeGreaterThanOrEqual(1);
+    fireEvent.change(screen.getByRole("textbox", { name: "Ticker or symbol" }), { target: { value: "RACE" } });
+    fireEvent.click(screen.getByRole("button", { name: "Search" }));
+    expect(await screen.findByText(/RACE · NYSE · USD/)).toBeInTheDocument();
+    expect(screen.getByRole("textbox", { name: "Verified provider listing" })).toHaveValue("RACE · NYSE · USD · Ferrari N.V.");
+  });
 });

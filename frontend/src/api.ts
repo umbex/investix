@@ -46,10 +46,14 @@ export type QuotesSummary = {
   days: number;
   items: {
     ticker: string;
-    price_eur: string;
+    price_eur: string | null;
     change_percent: string | null;
-    observed_at: string;
-    provider: string;
+    observed_at: string | null;
+    provider: string | null;
+    quote_symbol?: string | null;
+    quote_venue?: string | null;
+    watch?: boolean;
+    has_position?: boolean;
     points: { observed_at: string; price_eur: string }[];
   }[];
 };
@@ -77,6 +81,26 @@ export type InstrumentLookupResult = {
   exchange: string;
   currency: string;
   type: string;
+};
+
+export type InstrumentCatalogItem = {
+  ticker: string;
+  quote_symbol: string | null;
+  quote_venue: string | null;
+  quote_currency: string | null;
+  watch: boolean;
+  has_position: boolean;
+};
+
+export type BenchmarkConfig = {
+  name: string;
+  ticker: string;
+  quote_symbol: string;
+  quote_venue: string;
+  quote_currency: string;
+  methodology: "price_return" | "total_return";
+  active: boolean;
+  note?: string | null;
 };
 
 export type PerformanceSummary = {
@@ -175,4 +199,16 @@ export const api = {
   quotes: (days: number) => request<QuotesSummary>(`/quotes?days=${days}`),
   liveQuotes: (symbols: string[], sessionId: string) => request<LiveQuotesSummary>(`/quotes/live?symbols=${encodeURIComponent(symbols.join(","))}&session_id=${encodeURIComponent(sessionId)}`),
   lookupInstrument: (query: string) => request<{ status: string; items: InstrumentLookupResult[]; message?: string }>(`/instruments/lookup?query=${encodeURIComponent(query)}`),
+  instrumentCatalog: () => request<InstrumentCatalogItem[]>("/instruments/catalog"),
+  setWatchInstrument: (ticker: string, payload: { quote_symbol: string; quote_venue: string; quote_currency: string; watch: boolean }) => request<InstrumentCatalogItem>(`/instruments/watch/${encodeURIComponent(ticker)}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  }),
+  benchmarks: () => request<BenchmarkConfig[]>("/benchmarks"),
+  configureBenchmark: (ticker: string, payload: BenchmarkConfig) => request<BenchmarkConfig>(`/benchmarks/${encodeURIComponent(ticker)}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  }),
 };

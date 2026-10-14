@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
 from app.auth import require_session
@@ -20,4 +20,6 @@ def list_benchmarks(session: Session = Depends(get_session)) -> list[dict]:
 def configure(ticker: str, payload: BenchmarkConfig, session: Session = Depends(get_session)) -> dict:
     if payload.ticker.upper() != ticker.upper():
         payload = payload.model_copy(update={"ticker": ticker})
+    if payload.active:
+        session.execute(update(Benchmark).where(Benchmark.ticker != ticker.upper()).values(active=False))
     return serialize_benchmark(configure_benchmark(session, payload))

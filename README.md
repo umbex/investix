@@ -2,7 +2,7 @@
 
 Investix is a private portfolio-tracking application for reconstructing a securities ledger, monitoring current positions, and reading portfolio performance in EUR. It is designed for personal use on a trusted LAN/Tailscale network, with PostgreSQL as the authoritative runtime store.
 
-**Current version:** 0.4.0 ([Semantic Versioning](https://semver.org/))
+**Current version:** 0.5.0 ([Semantic Versioning](https://semver.org/))
 
 ## What it does
 
@@ -11,6 +11,7 @@ Investix is a private portfolio-tracking application for reconstructing a securi
 - Shows dashboard KPIs, current positions, account/ticker allocations, historical performance, and benchmark comparison.
 - Displays current quotes with change, Today P&L, market-open status, and a compact per-ticker trend.
 - Supports ticker lookup before instrument entry and stores the preferred listing, venue, currency, and provider symbol.
+- Supports up to five verified watchlist instruments without portfolio quantity; watchlist instruments are included in quotes and can be selected as benchmarks.
 - Provides local UI preferences for quote refresh, chart history, KPI visibility, and KPI order.
 - Runs EOD market-data refreshes in a separate worker and keeps live quote polling on-demand while the dashboard is open.
 
@@ -101,7 +102,7 @@ The Twelve Data free-plan safeguards batch at most eight symbols per request, ca
 2. Review the dashboard KPIs and current quotes.
 3. Use the ticker and account filters for portfolio views; the Today P&L total remains portfolio-wide for the selected account context.
 4. Use the Register page to add operations or correct/cancel an existing entry through the audit-preserving workflow.
-5. Use the Settings page to choose chart/quote ranges, live refresh, and KPI visibility/order. These preferences are local to the browser and do not require a service restart.
+5. Use the Settings page to choose chart/quote ranges, live refresh, KPI visibility/order, watchlist instruments, and the active benchmark. Search results are provider-verified and the first matching listing is preselected before saving; these preferences do not require a service restart.
 
 The dashboard uses Italian number formatting: comma for decimals, dot for thousands, and EUR values. KPI amounts are compacted as K€ (for example +1,25K€).
 
@@ -116,6 +117,7 @@ All protected endpoints require the session created by /api/auth/login, unless d
 - GET /api/performance: TWR series and configured benchmark comparison.
 - GET and POST /api/operations, plus /api/operations/{id}/revise and /api/operations/{id}/cancel: audited ledger workflow.
 - GET /api/lookup: provider-backed instrument lookup used during entry.
+- GET /api/instruments/catalog and PUT /api/instruments/watch/{ticker}: verified instrument catalog and watchlist management.
 - GET /api/benchmarks and PUT /api/benchmarks/{ticker}: benchmark catalog management.
 
 ## Development and verification

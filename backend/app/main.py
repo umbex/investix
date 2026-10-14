@@ -14,6 +14,7 @@ from app.api.performance import router as performance_router
 from app.api.quotes import router as quotes_router
 from app.api.live_quotes import router as live_quotes_router
 from app.api.instrument_lookup import router as instrument_lookup_router
+from app.api.instruments import router as instruments_router
 from app.auth import require_session
 from app.settings import get_settings
 from app.version import __version__
@@ -33,6 +34,7 @@ def create_app() -> FastAPI:
     application.include_router(quotes_router)
     application.include_router(live_quotes_router)
     application.include_router(instrument_lookup_router)
+    application.include_router(instruments_router)
 
     @application.get("/api/health")
     def health() -> dict[str, str]:

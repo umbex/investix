@@ -31,6 +31,7 @@ class Instrument(Identified):
     quote_symbol: Mapped[str | None] = mapped_column(String(64), nullable=True)
     quote_venue: Mapped[str | None] = mapped_column(String(128), nullable=True)
     quote_currency: Mapped[str | None] = mapped_column(String(8), nullable=True)
+    is_watch: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false", nullable=False)
 
 
 class Operation(Identified):
