@@ -1,6 +1,6 @@
 [project]
 name = "investix-api"
-version = "0.5.0"
+version = "0.2.0"
 description = "Private portfolio management API"
 requires-python = ">=3.12"
 dependencies = [

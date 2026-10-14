@@ -1,5 +1,7 @@
 # Investix
 
+Versione applicativa: `0.2.0` (SemVer; sorgente: [`VERSION`](VERSION)).
+
 Private portfolio management application. The design and implementation plan are in `docs/superpowers/`.
 
 ## Local setup
