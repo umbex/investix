@@ -57,9 +57,14 @@ describe("App", () => {
     const quotesHeading = screen.getByRole("heading", { name: "Quotazioni" });
     const positionsHeading = screen.getByRole("heading", { name: "Posizioni" });
     const valueHeading = screen.getByRole("heading", { name: "Valore nel tempo" });
+    const benchmarkHeading = screen.getByRole("heading", { name: "Rendimento vs benchmark" });
+    const stateHeading = screen.getByRole("heading", { name: "Stato dati" });
+    const twrLabel = screen.getByText("Rendimento TWR");
     expect(quotesHeading).toBeInTheDocument();
+    expect(twrLabel.compareDocumentPosition(quotesHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(quotesHeading.compareDocumentPosition(positionsHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(positionsHeading.compareDocumentPosition(valueHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(benchmarkHeading.compareDocumentPosition(stateHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect((await screen.findAllByText("VWCE")).length).toBeGreaterThanOrEqual(1);
     expect(screen.queryByRole("heading", { name: "Allocazione" })).not.toBeInTheDocument();
     expect(screen.getAllByLabelText("Ticker")[0]).toBeInTheDocument();
