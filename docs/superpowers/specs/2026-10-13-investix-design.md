@@ -1,92 +1,93 @@
-# Investix — Specifica di design
+# Investix — Design Specification
 
-**Stato:** approvata per pianificazione tecnica  
-**Data:** 13 ottobre 2026  
-**Specifica sorgente:** `PRD.md` versione 0.1
+**Status:** approved for technical planning
+**Date:** 13 October 2026
+**Source specification:** `PRD.md`, version 0.1
 
-## Obiettivo
+## Objective
 
-Realizzare un'applicazione privata, autogestita e riproducibile in Docker per gestire il portafoglio personale. Il database Investix è la fonte autorevole; gli export storici servono esclusivamente per import iniziale e riconciliazione in sola lettura.
+Build a private, self-hosted, reproducible Docker application for managing a personal portfolio. The Investix database is authoritative; historical exports are used only for one-time import and read-only reconciliation.
 
-## Architettura
+## Architecture
 
-- Frontend React + TypeScript, servito insieme all'applicazione privata.
-- Backend FastAPI: API autenticata, dominio contabile/performance, import e adapter provider.
-- PostgreSQL persistente: ledger, configurazione, strumenti, osservazioni prezzi/FX, import e audit.
-- Worker separato: aggiornamenti EOD, backfill storico, controllo staleness e, in futuro, refresh configurabili più frequenti.
-- Docker Compose sul Mac mini, portabile senza modifiche architetturali nel Docker homelab. Accesso privato tramite Tailscale; nessuna esposizione Internet predefinita.
+- React + TypeScript frontend, served with the private application.
+- FastAPI backend: authenticated API, ledger/performance domain, import workflow, and provider adapters.
+- Persistent PostgreSQL: ledger, configuration, instruments, price/FX observations, imports, and audit data.
+- Separate worker: EOD updates, historical backfill, staleness checks, and future configurable refresh frequencies.
+- Docker Compose on the Mac mini, portable to a Docker homelab without architectural changes. Private access through Tailscale; no Internet exposure by default.
 
-Il frontend legge gli snapshot persistiti. Quando il worker salva un nuovo dato, FastAPI può notificare la UI tramite WebSocket; il browser non chiama provider esterni e non riceve segreti. L'eventuale frequenza intraday futura è una policy del worker e non richiede una diversa architettura frontend/backend.
+The frontend reads persisted snapshots. When the worker saves a new value, FastAPI may notify the UI through WebSocket; the browser never calls external providers and never receives secrets. Any future intraday frequency is a worker policy and does not require a different frontend/backend architecture.
 
-## UI e grafici
+## UI and charts
 
-- Direzione approvata: **Command center** — dashboard dark, densa ma leggibile, con KPI, andamento principale, allocazione e drill-down a registro e performance.
-- Lingua italiana, locale `it-IT`, valuta base EUR; numeri tabulari, focus visibile, navigazione tastiera e stati non affidati al solo colore.
-- Libreria UI: **Mantine Core** (MIT), senza starter/template a pagamento come dipendenza di prodotto.
-- Grafici: **Apache ECharts** (Apache-2.0), con tooltip, legenda, zoom/pan, range, export dei dati filtrati e descrizioni accessibili.
-- Desktop prioritario; tablet utilizzabile; mobile riorganizza i controlli senza sovrapposizioni.
+- Approved direction: **Command center** — a dark, dense but readable dashboard with KPIs, primary performance, allocation, and drill-down to the register and performance views.
+- Italian language, `it-IT` locale, EUR base currency; tabular numbers, visible focus, keyboard navigation, and states not conveyed by color alone.
+- UI library: **Mantine Core** (MIT), without paid starter/template dependencies.
+- Charts: **Apache ECharts** (Apache-2.0), with tooltip, legend, zoom/pan, range controls, filtered-data export, and accessible descriptions.
+- Desktop is the primary experience; tablet is usable; mobile rearranges controls without overlap.
 
-## Ledger, posizioni e calcoli
+## Ledger, positions, and calculations
 
-`operations` è un ledger append-only. Una correzione crea una revisione e un annullamento conserva audit e riferimenti; non esistono cancellazioni distruttive non tracciate.
+`operations` is an append-only ledger. A correction creates a revision and a cancellation preserves audit data and references; there are no untracked destructive deletions.
 
-Ogni operazione appartiene a un account e a uno strumento. L'input supporta acquisto, vendita, saldo iniziale, dividendo, commissione, trasferimenti e rettifiche/eventi societari documentati. Quantità, prezzo, controvalore, commissione e dividendo mantengono valore/valuta originaria ed EUR quando disponibili.
+Each operation belongs to an account and an instrument. Input supports buy, sell, opening balance, dividend, fee, transfers, and documented adjustments/corporate events. Quantity, price, consideration, fee, and dividend preserve original value/currency and EUR values when available.
 
-Commissioni e dividendi sono opzionali e nullable: l'assenza non viene trasformata in uno zero dichiarato. KPI e report distinguono quindi importi registrati e copertura incompleta.
+Fees and dividends are optional and nullable: absence is not converted into a stated zero. KPIs and reports therefore distinguish recorded amounts from incomplete coverage.
 
-Le posizioni e le metriche sono derivate dal ledger e dalle osservazioni di mercato:
+Positions and metrics are derived from the ledger and market observations:
 
-- costo medio ponderato per ticker/account;
-- P&L realizzato persistente anche a posizione con quantità zero;
-- P&L non realizzato come valore corrente meno costo residuo;
-- P&L totale separato in realizzato, non realizzato, dividendi e commissioni registrati;
-- TWR giornaliero flow-adjusted, con flussi a fine giornata; dividendi e commissioni inclusi quando registrati.
+- weighted average cost per ticker/account;
+- realized P&L retained even when quantity reaches zero;
+- unrealized P&L as current value minus residual open cost;
+- total P&L split into recorded realized, unrealized, dividend, and fee components;
+- daily flow-adjusted TWR, with end-of-day flows; dividends and fees included when recorded.
 
-Se mancano dati necessari, rendimento/CAGR è non disponibile con motivazione, mai un valore artificiale pari a zero.
+If required data is missing, return unavailable performance/CAGR with an explanation, never an artificial zero.
 
-## Dati di mercato
+## Market data
 
-Ogni `price_observation` conserva provider, simbolo originale, mercato, valuta, unità, timestamp di acquisizione, campo prezzo, valore grezzo, valore normalizzato, FX e stato.
+Every `price_observation` stores provider, original symbol, market, currency, unit, acquisition timestamp, price field, raw value, normalized value, FX, and status.
 
-La v1 esegue aggiornamenti EOD. Provider pubblici o scraping sono consentiti soltanto per basso volume e uso personale, con cache, rate limit, retry/backoff, provenienza e staleness. Un errore non cancella l'ultimo dato valido.
+Version 1 performs EOD updates. Public providers or scraping are allowed only for low-volume personal use, with caching, rate limiting, retry/backoff, provenance, and staleness metadata. An error never deletes the last valid value.
 
-Per un nuovo titolo, l'utente definisce/conferma ticker, borsa, valuta e unità; l'adapter esegue un backfill dalla prima operazione, con margine per giorni non di mercato, e poi entra nella pianificazione ordinaria. In caso di copertura insufficiente il sistema espone il gap e permette backfill da altro provider o CSV, senza inventare punti storici. GBX viene normalizzato in GBP prima della conversione EUR; le serie storiche usano FX storico.
+For a new instrument, the user defines or confirms ticker, exchange, currency, and unit; the adapter backfills from the first operation, allowing for non-trading days, and then enters the normal schedule. If coverage is insufficient, the system exposes the gap and allows backfill from another provider or CSV without inventing historical points. GBX is normalized to GBP before EUR conversion; historical series use historical FX.
 
-## Import STOCKS-26 e riconciliazione
+## Historical import and reconciliation
 
-L'import è one-shot e non introduce sincronizzazione futura con fonti esterne.
+Import is one-shot and does not introduce future synchronization with external sources.
 
-1. Verifica live in sola lettura di ID, titolo, fogli e schema.
-2. Acquisizione grezza di `MOVIMENTI` con numero riga, timestamp e hash.
-3. Staging e validazione di tipi, date, quantità, valute, simboli e duplicati.
-4. Acquisizione versionata di setup, benchmark e, se verificabili, snapshot prezzo/FX.
-5. Report di riconciliazione: quantità ticker/account, costo residuo, P&L realizzato, dividendi registrati, benchmark, copertura e gap.
-6. Finalizzazione idempotente solo senza righe non mappate, valute/unità dubbie o scostamenti oltre tolleranza documentata.
+1. Parse the exported input and preserve source row, timestamp, and hash.
+2. Show a preview with counts, ranges, duplicates, errors, currencies, and unrecognized rows.
+3. Validate and map the data.
+4. Import into staging and produce a report of accepted/rejected rows and reasons.
+5. Reconcile ticker/account quantities, residual cost, realized P&L, recorded dividends, benchmarks, coverage, and gaps.
+6. Finalize idempotently only when there are no unmapped rows, ambiguous currencies/units, or discrepancies beyond the documented tolerance.
 
-La verifica del 13 ottobre 2026 conferma il workbook `STOCKS-26`, ID `1Cqpe6uYLJwOmru1wgbEKr4a-NKndAvRg5j2TyAYmhHg`, i sei fogli e gli ID riportati nella scheda. La discrepanza nota resta: SETUP cita le colonne N:O, mentre l'intestazione del ledger colloca `SIMBOLO QUOTA` e `VALUTA QUOTA` in M:N. L'import segue sempre le intestazioni effettive M:N.
+The 13 October 2026 verification confirmed the `STOCKS-26` workbook, its six sheets, and the recorded identifiers. The known discrepancy remains: SETUP refers to columns N:O, while the ledger header places `QUOTE SYMBOL` and `QUOTE CURRENCY` in M:N. Import always follows the effective headers M:N.
 
-## Sicurezza e operatività
+## Security and operations
 
-- Autenticazione obbligatoria anche per il singolo utente; API e provider solo server-side.
-- Segreti in environment/config, mai in repository, immagini, browser o log.
-- Volume PostgreSQL persistente, backup con retention configurabile, export e restore verificato su database temporaneo.
-- Health check di app, DB e worker; stato dell'ultimo provider update e backup consultabile.
+- Authentication is required even for a single user; sessions and providers remain server-side.
+- No broker integration or trading; store only the portfolio data required by the application.
+- Server-side validation and logs without tokens or secrets.
+- HTTPS on untrusted networks; default access limited to LAN/VPN.
+- Persistent PostgreSQL volume, configurable backup retention, export, and restore verification in a temporary database.
+- Health checks for the app, database, and worker; last provider update and backup status are inspectable.
+- Quotes and P&L are informational, not advice or guaranteed execution prices.
 
-## Fuori ambito della v1
+No broker/bank integration, cash management, trading, multi-user access, public exposure, streaming/intraday service, financial advice, or bidirectional synchronization with external sources.
 
-Nessuna integrazione broker/banca, gestione di cassa, trading, multiutenza, esposizione pubblica, streaming/intraday, consulenza finanziaria o sincronizzazione bidirezionale con fonti esterne.
+More frequent refresh remains a future extension supported by the architecture but not a functional requirement of version 1.
 
-Il refresh più frequente resta un'estensione futura, prevista nei confini dell'architettura ma non pianificata come requisito funzionale della prima versione.
+## Tests
 
-## Criteri di verifica principali
+- Ledger tests: buys, partial/full sells, repurchases, average cost, P&L, optional dividends/fees, splits, FX/GBX, TWR, and CAGR.
+- Import tests: schema, incomplete rows, invalid dates/currencies, formula/errors, duplicates, idempotency, and reconciliation.
+- Adapter tests: success, insufficient coverage, missing data, unknown symbol, rate limit, timeout, invalid value, and retry.
+- PostgreSQL/migration tests, CRUD end-to-end tests, filters/ranges/charts, provider refresh, and backup/restore.
 
-- Test di ledger: acquisti, vendite parziali/totali, riacquisti, costo medio, P&L, dividendi/commissioni opzionali, split, FX/GBX, TWR e CAGR.
-- Test di import: schema, righe incomplete, date/valute invalide, formule/errori, duplicati, idempotenza e riconciliazione.
-- Test adapter: successo, copertura insufficiente, dato mancante, simbolo sconosciuto, rate limit, timeout, valore invalido e retry.
-- Test PostgreSQL/migrazioni, CRUD e2e, filtri/range/grafici, provider refresh, backup/restore.
+## Intentionally deferred decisions
 
-## Decisioni rinviate intenzionalmente
-
-- Provider iniziale specifico: sarà selezionato dopo una prova di copertura e licenza sui simboli reali, senza attivare servizi a pagamento senza consenso.
-- Soglie di staleness, frequenze EOD esatte per mercato, tolleranze di riconciliazione e retention backup: definite nel piano tecnico e nella configurazione, non hard-coded.
-- Esportazione PNG: valutata con l'implementazione ECharts; CSV resta requisito certo.
+- Specific initial provider: selected after coverage and licensing checks on real symbols, without enabling paid services without consent.
+- Staleness thresholds, exact EOD schedules per market, reconciliation tolerances, and backup retention: defined in the technical plan and configuration rather than hard-coded.
+- PNG export: evaluated with the ECharts implementation; CSV remains a confirmed requirement.

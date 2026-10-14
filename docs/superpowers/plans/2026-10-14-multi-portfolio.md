@@ -18,7 +18,7 @@
 - EUR remains the current base currency; `base_currency` is stored on the portfolio for future extension.
 - Historical exports remain an import/reconciliation source, never a runtime dependency.
 - Corrections and cancellations remain non-destructive and auditable.
-- The first delivery does not include a consolidated “Tutti i portafogli” performance view.
+- The first delivery does not include a consolidated “All portfolios” performance view.
 - This plan does not introduce multi-user permissions; authentication remains single-user.
 
 ## Review Focus
@@ -40,7 +40,7 @@ Keep `accounts`, `instruments`, and `observations` shared. Accounts shown in a p
 ### Deferred phase 2
 
 - portfolio-specific benchmark assignment;
-- consolidated “Tutti” view;
+- consolidated “All portfolios” view;
 - explicit account-to-portfolio membership rules;
 - transfers between portfolios;
 - portfolio-level sharing or multi-user authorization.
@@ -181,5 +181,5 @@ Do not start phase 2 until phase 1 has demonstrated isolated ledger/API results 
 1. Should `Principale` be renamed before migration, or remain the immutable default label?
 2. Should accounts be globally reusable, or explicitly assigned through a `portfolio_accounts` relation?
 3. Should benchmarks be global or selected per portfolio?
-4. Is a consolidated “Tutti i portafogli” dashboard required?
+4. Is a consolidated “All portfolios” dashboard required?
 5. Are transfers between portfolios required, or can they remain separate ledger events?

@@ -2,306 +2,306 @@
 
 **Version:** 0.1  
 **Status:** Draft for user review  
-**Data:** 13 ottobre 2026  
-**Destinatario:** Codex e proprietario del prodotto  
-**Prodotto:** applicazione web privata per la gestione professionale di un portafoglio personale
+**Date:** 13 October 2026
+**Audience:** Codex and the product owner
+**Product:** private web application for professional management of a personal portfolio
 
-## 1. Visione
+## 1. Vision
 
-Investix è uno strumento web personale, affidabile e professionale per registrare le operazioni, conoscere il valore corrente e storico del portafoglio, misurare guadagni e rendimenti e confrontarli con benchmark configurabili. Funziona in container Docker con un database persistente e non dipende da fonti esterne di foglio elettronico per calcoli o aggiornamenti futuri.
+Investix is a reliable, professional personal web tool for recording transactions, understanding current and historical portfolio value, measuring gains and returns, and comparing them with configurable benchmarks. It runs in Docker containers with a persistent database and does not depend on external spreadsheet sources for future calculations or updates.
 
-“Personale” descrive l’utente iniziale e il modello di accesso, non un compromesso sulla qualità: coerenza dei calcoli, tracciabilità, gestione degli errori, grafici interattivi, sicurezza e procedure di backup sono requisiti di prodotto.
+“Personal” describes the initial user and access model, not a compromise on quality: calculation consistency, traceability, error handling, interactive charts, security, and backup procedures are product requirements.
 
-Il database Investix sarà la fonte ufficiale dei dati operativi. Le fonti storiche usate per la migrazione servono solo per import e riconciliazione, non come servizio runtime né come seconda fonte modificabile.
+The Investix database is the authoritative source for operational data. Historical sources used for migration are only for import and reconciliation, never a runtime service or a second editable source.
 
-## 2. Utente e criteri di successo
+## 2. User and success criteria
 
-L’utente iniziale è un singolo investitore che gestisce strumenti distribuiti su più account. Il portafoglio può includere azioni, ETF e criptovalute presenti nel registro. Valuta base EUR.
+The initial user is a single investor managing instruments across multiple accounts. The portfolio may include stocks, ETFs, and cryptocurrencies present in the register. The base currency is EUR.
 
-La soluzione è riuscita quando l’utente può:
+The solution succeeds when the user can:
 
-- aggiungere, correggere e rimuovere operazioni senza mantenere formule;
-- vedere posizioni aggregate per strumento e risalire ai singoli account;
-- distinguere valore, P&L realizzato, P&L non realizzato, dividendi e rendimento percentuale;
-- esplorare grafici per periodi predefiniti o date personalizzate e confrontarli con benchmark;
-- conoscere sempre data e fonte della quotazione, individuando dati mancanti o scaduti;
-- cambiare provider senza riscrivere i calcoli o perdere lo storico;
-- ripristinare il database da un backup verificato.
+- add, correct, and remove operations without maintaining formulas;
+- view positions aggregated by instrument and drill down to individual accounts;
+- distinguish value, realized P&L, unrealized P&L, dividends, and percentage return;
+- explore charts for predefined or custom date periods and compare them with benchmarks;
+- always see quote date and source, identifying missing or stale data;
+- change provider without rewriting calculations or losing history;
+- restore the database from a verified backup.
 
-## 3. Ambito
+## 3. Scope
 
-### Incluso nella prima versione
+### Included in the first version
 
-1. Applicazione web privata con autenticazione.
-2. Dashboard aggregata, dettaglio per account e pagina per strumento.
-3. Registro movimenti con inserimento, modifica, annullamento/eliminazione tracciata, ricerca e filtri.
-4. Import guidato da STOCKS-26 di movimenti, impostazioni, benchmark e dati storici estraibili e verificabili.
-5. Aggiornamento programmato di prezzi EOD e cambi tramite provider selezionabile.
-6. Adattatori intercambiabili per più provider con interfaccia comune.
-7. Calcolo di posizioni, costo, P&L, rendimento e benchmark.
-8. Grafici interattivi, intervalli, filtri ed esportazione dei dati visualizzati.
-9. Configurazione di strumenti, simboli/mercati, valute e benchmark.
-10. Docker Compose, PostgreSQL persistente, backup e restore documentati.
-11. Test automatici di calcoli, import, provider e principali flussi utente.
+1. Private authenticated web application.
+2. Aggregated dashboard, account detail, and instrument page.
+3. Operations register with create, revise, audited cancellation, search, and filters.
+4. Guided import of STOCKS-26 operations, settings, benchmarks, and extractable/verifiable historical data.
+5. Scheduled EOD prices and FX updates through a selectable provider.
+6. Interchangeable adapters for multiple providers behind a common interface.
+7. Position, cost, P&L, return, and benchmark calculations.
+8. Interactive charts, ranges, filters, and export of displayed data.
+9. Configuration of instruments, symbols/markets, currencies, and benchmarks.
+10. Docker Compose, persistent PostgreSQL, and documented backup/restore.
+11. Automated tests for calculations, import, providers, and key user flows.
 
-### Escluso dalla prima versione
+### Excluded from the first version
 
-- Inserimento o esecuzione di ordini presso broker.
-- Collegamenti automatici a broker o conti bancari.
-- Gestione di saldo di cassa, pagamenti o riconciliazione bancaria.
-- Consulenza finanziaria/fiscale o raccomandazioni di investimento.
-- Multiutenza, ruoli, condivisione pubblica o SaaS.
-- Quotazioni intraday, streaming e alert per trading.
-- Dipendenza operativa da fonti esterne di foglio elettronico o sincronizzazione bidirezionale.
+- Placing or executing broker orders.
+- Automatic broker or bank-account connections.
+- Cash-balance management, payments, or bank reconciliation.
+- Financial/tax advice or investment recommendations.
+- Multi-user access, roles, public sharing, or SaaS operation.
+- Intraday quotes, streaming, or trading alerts.
+- Operational dependency on external spreadsheet sources or bidirectional synchronization.
 
-## 4. Requisiti funzionali
+## 4. Functional requirements
 
-### 4.1 Registro movimenti
+### 4.1 Operations register
 
-Il registro è la base per ricostruire quantità e costo delle posizioni. Deve supportare almeno acquisto, vendita, saldo iniziale, dividendo, commissione separata e rettifica/evento societario documentato quando necessario.
+The register is the basis for reconstructing position quantities and cost. It must support at least buy, sell, opening balance, dividend, separate fee, and documented adjustment/corporate event when required.
 
-Campi logici: data operazione e, se utile, data regolamento; account; ticker; ISIN; tipo; quantità; prezzo e valuta originali quando noti; controvalore EUR; commissioni EUR; dividendo EUR; simbolo e mercato; note; identificativo univoco; stato e cronologia modifiche.
+Logical fields: trade date and, when useful, settlement date; account; ticker; ISIN; type; quantity; original price and currency when known; EUR consideration; EUR fees; EUR dividend; symbol and market; notes; unique identifier; status; and change history.
 
-Non è richiesto mantenere un saldo di cassa. Acquisti e vendite sono finanziati/regolati fuori dal portafoglio. Il motore registra però flussi di capitale derivati, non mostrati come cassa detenuta, per calcolare rendimenti corretti.
+Cash-balance tracking is not required. Buys and sells are funded/settled outside the portfolio. The engine nevertheless records derived capital flows, not shown as held cash, to calculate returns correctly.
 
-Le operazioni devono poter essere corrette o annullate. Le eliminazioni devono essere reversibili o lasciare una traccia di audit. Ogni modifica ricalcola le posizioni e metriche dipendenti.
+Operations must be correctable or cancellable. Deletions must be reversible or leave an audit trail. Every change recalculates positions and dependent metrics.
 
-### 4.2 Posizioni e P&L
+### 4.2 Positions and P&L
 
-- Vista principale aggregata per strumento e dettaglio consultabile per account.
-- Costo medio ponderato per ticker e account come metodo iniziale, coerente con il registro attuale. Passare a FIFO richiede decisione esplicita e riconciliazione.
-- Il P&L realizzato rimane consultabile anche quando la quantità residua diventa zero.
-- P&L non realizzato = valore corrente meno costo residuo della quantità aperta.
-- P&L complessivo espone separatamente componenti realizzate, non realizzate, dividendi e commissioni.
-- Una posizione azzerata non cancella storico, costo né P&L realizzato.
-- Date o costi iniziali approssimativi devono poter essere marcati e accompagnati da nota.
+- Primary view aggregated by instrument with account-level detail.
+- Weighted average cost per ticker/account as the initial method, consistent with the current register. Moving to FIFO requires an explicit decision and reconciliation.
+- Realized P&L remains available even when residual quantity reaches zero.
+- Unrealized P&L = current value minus residual cost of the open quantity.
+- Total P&L exposes realized, unrealized, dividend, and fee components separately.
+- A zeroed position does not delete history, cost, or realized P&L.
+- Approximate initial dates or costs can be marked and accompanied by a note.
 
-### 4.3 Rendimento e benchmark
+### 4.3 Return and benchmark
 
-Il rendimento percentuale non deve essere il semplice rapporto fra valore finale e iniziale quando ci sono acquisti o vendite. Il motore usa una metodologia flow-adjusted (TWR o metodo scelto e documentato) per escludere l’effetto dei flussi di capitale dal rendimento, mantenendoli distinti dal P&L assoluto.
+Percentage return must not be a simple final-versus-initial value ratio when buys or sells occur. The engine uses a flow-adjusted methodology (TWR or another selected and documented method) to exclude capital-flow effects from return while keeping them separate from absolute P&L.
 
-Requisiti:
+Requirements:
 
-- Formula documentata per rendimento giornaliero, cumulato, annualizzato/CAGR e periodo selezionato.
-- Acquisti/vendite trattati come flussi sintetici di capitale ai soli fini della performance, non come gestione di cassa.
-- Dividendi e commissioni inclusi o esclusi in modo esplicito e coerente fra portafoglio e benchmark.
-- Benchmark configurabili con nome, ticker, simbolo provider, mercato, valuta, stato attivo e metodologia price-return o total-return.
-- Serie confrontate sullo stesso intervallo e convertite in EUR con cambi storici coerenti quando richiesto.
-- Evidenziare proxy ETF, indici price-only e differenze metodologiche che riducono la comparabilità.
-- Se date o valori iniziali non bastano, mostrare non disponibile con motivazione, non zero o un rendimento ingannevole.
+- Documented formula for daily, cumulative, annualized/CAGR, and selected-period return.
+- Buys/sells treated as synthetic capital flows only for performance purposes, not as cash management.
+- Dividends and fees included or excluded explicitly and consistently for portfolio and benchmark.
+- Benchmarks configurable with name, ticker, provider symbol, market, currency, active status, and price-return or total-return methodology.
+- Series compared over the same interval and converted to EUR with consistent historical FX when required.
+- ETF proxies, price-only indices, and methodological differences that reduce comparability must be highlighted.
+- If initial dates or values are insufficient, show unavailable with an explanation, never zero or a misleading return.
 
 ### 4.4 Dashboard
 
-La schermata principale mostra:
+The main screen shows:
 
-- valore totale corrente, data/ora ultimo aggiornamento e stato dei dati;
-- P&L assoluto complessivo e componenti;
-- rendimenti per periodi selezionati e CAGR quando il periodo è sufficiente;
-- posizioni aggregate con ticker/nome, quantità, valore di mercato, costo EUR, P&L, P&L percentuale e peso;
-- ricerca e filtri per strumento, account, tipo di asset e periodo;
-- navigazione dall’aggregato ai movimenti e account sottostanti;
-- stati chiari di caricamento, assenza dati, errore provider e quotazione scaduta.
+- current total value, last-update timestamp, and data status;
+- total absolute P&L and its components;
+- returns for selected periods and CAGR when the period is long enough;
+- aggregated positions with ticker/name, quantity, market value, EUR cost, P&L, percentage P&L, and weight;
+- search and filters by instrument, account, asset type, and period;
+- navigation from aggregates to underlying operations and accounts;
+- clear loading, no-data, provider-error, and stale-quote states.
 
-KPI, tabella, grafici e dettaglio devono concordare. La valuta base è EUR; per strumenti in altre valute devono essere ispezionabili valuta di quotazione e contributo FX.
+KPIs, tables, charts, and detail views must agree. The base currency is EUR; for instruments in other currencies, quote currency and FX contribution must be inspectable.
 
-### 4.5 Grafici, intervalli e filtri
+### 4.5 Charts, ranges, and filters
 
-I grafici sono funzionalità fondamentali. La prima versione include:
+Charts are core functionality. The first version includes:
 
-1. Valore del portafoglio e P&L complessivo nel tempo, con serie selezionabili.
-2. Rendimento effettivo contro uno o più benchmark configurati.
-3. Rendimento per strumento e confronto fra strumenti/account.
-4. Allocazione per ticker e account.
+1. Portfolio value and total P&L over time, with selectable series.
+2. Actual return against one or more configured benchmarks.
+3. Return by instrument and comparison across instruments/accounts.
+4. Allocation by ticker and account.
 
-Intervalli: 1M, 3M, 6M, YTD, 1Y, 2Y, 5Y, tutto lo storico disponibile e intervallo personalizzato da/a. L’interfaccia comunica i limiti dovuti alla copertura effettiva.
+Ranges: 1M, 3M, 6M, YTD, 1Y, 2Y, 5Y, all available history, and custom from/to dates. The interface communicates limits caused by actual data coverage.
 
-Interazioni:
+Interactions:
 
-- filtri per ticker, account, benchmark e classe di asset con indicazione visibile dei filtri attivi;
-- legenda/controlli per mostrare o nascondere valore, P&L, rendimento e benchmark;
-- tooltip per data con valori, rendimento, valuta e fonte/stato;
-- zoom, pan o selezione di finestra temporale e reset alla vista iniziale;
-- aggregazione giornaliera, settimanale o mensile quando utile, rispettando i calendari di mercato;
-- confronti percentuali normalizzati all’inizio del periodo; serie monetarie con scale che non inducano confronti errati;
-- esportazione CSV dei punti filtrati e, se supportato dalla libreria scelta, esportazione immagine;
-- filtri e range aggiornano coerentemente KPI e dati collegati e consentono il ritorno alla vista completa.
+- filters for ticker, account, benchmark, and asset class with visible active-filter state;
+- legend/controls to show or hide value, P&L, return, and benchmark;
+- date tooltip with values, return, currency, and source/status;
+- zoom, pan, or time-window selection with reset to the initial view;
+- daily, weekly, or monthly aggregation when useful, respecting market calendars;
+- percentage comparisons normalized at the start of the period; monetary series use scales that do not encourage invalid comparisons;
+- CSV export of filtered points and, if supported by the selected library, image export;
+- filters and ranges update KPIs and related data consistently and allow returning to the full view.
 
-## 5. Fase UX/UI design — gate prima della UI definitiva
+## 5. UX/UI design phase — gate before final UI
 
-Prima dello sviluppo dell’interfaccia si realizza una fase di design distinta dall’implementazione funzionale.
+Before implementation of the interface, complete a design phase separate from functional implementation.
 
-### Attività e deliverable
+### Activities and deliverables
 
-1. Redigere un design brief per una dashboard finanziaria moderna, dark, densa ma leggibile.
-2. Presentare 2–3 direzioni visive/layout per dashboard, grafici, tabella posizioni e registro.
-3. Confrontare template/starter kit riutilizzabili e layout su misura. Valutare qualità, manutenzione, licenza, accessibilità, responsive, personalizzazione e dipendenze.
-4. Confrontare librerie UI e grafici con gli stessi criteri. Candidati non vincolanti: componenti Tailwind/shadcn, Mantine o MUI; ECharts, Recharts o TradingView Lightweight Charts. La selezione richiede verifica di licenza, manutenzione, accessibilità, funzioni e compatibilità con i filtri richiesti.
-5. Preparare wireframe e prototipo visivo/navigabile per dashboard, grafico con range/filtri, dettaglio posizione e inserimento movimento. Usare dati fittizi o minimizzati.
-6. Presentare raccomandazione, trade-off e manutenzione prevista.
-7. Ottenere approvazione dello stile, layout, template e librerie prima di costruire la UI di produzione.
+1. Write a design brief for a modern, dark, dense but readable financial dashboard.
+2. Present 2–3 visual/layout directions for the dashboard, charts, positions table, and register.
+3. Compare reusable templates/starter kits with custom layouts. Evaluate quality, maintenance, license, accessibility, responsiveness, customization, and dependencies.
+4. Compare UI and chart libraries using the same criteria. Non-binding candidates: Tailwind/shadcn components, Mantine, or MUI; ECharts, Recharts, or TradingView Lightweight Charts. Selection requires verification of license, maintenance, accessibility, capabilities, and compatibility with required filters.
+5. Prepare wireframes and a visual/navigable prototype for dashboard, chart with ranges/filters, position detail, and operation entry. Use synthetic or minimized data.
+6. Present recommendation, trade-offs, and expected maintenance.
+7. Obtain approval of style, layout, template, and libraries before building production UI.
 
-### Principi visivi e di usabilità
+### Visual and usability principles
 
-- Tema scuro professionale, contrasto sufficiente; stati positivi/negativi non distinguibili solo dal colore.
-- Densità informativa da strumento di analisi, gerarchia chiara, valori numerici leggibili.
-- Desktop come esperienza primaria; tablet utilizzabile; mobile leggibile senza sovrapporre controlli e serie.
-- Navigazione da tastiera e focus visibile per controlli principali; etichette e tooltip comprensibili.
-- Lingua italiana, locale it-IT, date e numeri locali, EUR come valuta base.
-- Preferenze persistenti per tema, range e benchmark se realizzabili senza complessità sproporzionata.
+- Professional dark theme with sufficient contrast; positive/negative states must not be distinguished by color alone.
+- Analysis-tool information density, clear hierarchy, and readable numeric values.
+- Desktop as the primary experience; tablet usable; mobile readable without overlapping controls or series.
+- Keyboard navigation and visible focus for primary controls; understandable labels and tooltips.
+- Italian language, it-IT locale, localized dates and numbers, EUR as base currency.
+- Persistent preferences for theme, range, and benchmark if achievable without disproportionate complexity.
 
-**Gate:** nessuna scelta definitiva di UI kit, chart library o template e nessuna UI di produzione prima della revisione e approvazione del prototipo.
+Gate: no final UI-kit, chart-library, or template choice and no production UI before prototype review and approval.
 
-## 6. Dati di mercato e adattatori
+## 6. Market data and adapters
 
-### 6.1 Interfaccia comune
+### 6.1 Common interface
 
-Il dominio Investix non chiama direttamente API proprietarie. Ogni adapter normalizza:
+The Investix domain does not call proprietary APIs directly. Each adapter normalizes:
 
-- ricerca/verifica di simbolo e mercato;
-- serie EOD storica per simbolo e intervallo date;
-- ultimo EOD disponibile;
-- serie FX storiche e ultimo cambio quando forniti;
-- metadati di data/ora, valuta, unità e stato;
-- errori, limiti, ritardi, rate limit e stato servizio.
+- symbol and market search/verification;
+- historical EOD series by symbol and date interval;
+- latest available EOD value;
+- historical FX series and latest FX value when provided;
+- date/time, currency, unit, and status metadata;
+- errors, limits, delays, rate limits, and service status.
 
-Il sistema permette di configurare e provare più provider. Ogni osservazione conserva provider, simbolo originale, data acquisizione, mercato, valuta, unità, campo prezzo e stato. Cambiare provider non sovrascrive silenziosamente i dati: confronto e regole esplicite evitano serie miste o discontinuità.
+The system allows multiple providers to be configured and tested. Each observation stores provider, original symbol, acquisition date, market, currency, unit, price field, and status. Changing provider does not silently overwrite data: comparisons and explicit rules prevent mixed or discontinuous series.
 
-Aggiornamenti idempotenti; retry con backoff e rate limiting; un errore non cancella l’ultimo dato valido. Dati scaduti restano distinguibili e visibili con avviso.
+Updates are idempotent; retries use backoff and rate limiting; an error does not delete the last valid value. Stale data remains distinguishable and visible with a warning.
 
-### 6.2 Frequenza e storico
+### 6.2 Frequency and history
 
-- Prima versione EOD giornaliera dopo la chiusura del relativo mercato; nessuno streaming/intraday.
-- L’interfaccia provider supporta aggiornamenti futuri, backfill e recupero dei buchi anche se lo storico iniziale viene importato da un file congelato.
-- Pianificazione per mercato e fuso orario; non assumere che borse USA ed Europa chiudano allo stesso orario.
-- Lo storico normalizzato è conservato in PostgreSQL e validato prima di alimentare KPI e grafici.
+- First version: daily EOD after the relevant market closes; no streaming/intraday data.
+- The provider interface supports future updates, backfill, and gap recovery even when initial history comes from a frozen file.
+- Schedule by market and time zone; do not assume US and European exchanges close at the same time.
+- Normalized history is stored in PostgreSQL and validated before feeding KPIs and charts.
 
-### 6.3 Valute, unità ed eventi societari
+### 6.3 Currencies, units, and corporate events
 
-- Conservare prezzo nativo, valuta, prezzo normalizzato, FX utilizzato, valore EUR, data e fonte del cambio.
-- Trattare GBX (pence) distintamente da GBP (sterline): dividere per 100 prima della conversione EUR.
-- Usare FX storico per valutazioni storiche, non il cambio odierno retroattivo.
-- Gestire split ed eventi societari per evitare salti artificiali in quantità, costo e rendimento.
-- Conservare prezzo grezzo e aggiustato quando disponibili e documentare quale alimenta ciascuna metrica.
-- Il total-return deve tener conto dei dividendi o dichiarare che la serie è price-only.
+- Preserve native price, currency, normalized price, FX used, EUR value, date, and FX source.
+- Treat GBX (pence) separately from GBP (pounds): divide by 100 before EUR conversion.
+- Use historical FX for historical valuations, not today’s FX retroactively.
+- Handle splits and corporate events to avoid artificial jumps in quantity, cost, and return.
+- Preserve raw and adjusted prices when available and document which one feeds each metric.
+- Total return must include dividends or state that the series is price-only.
 
-### 6.4 Selezione del provider
+### 6.4 Provider selection
 
-La prova di copertura verifica simboli reali e benchmark, profondità dello storico, FX, unità di quotazione, split/dividendi, quota API, conservazione e licenza per visualizzazione personale. Nessun provider è considerato già approvato. Un piano gratuito non è automaticamente adeguato o autorizzato perché i dati sono accessibili da browser.
+Coverage testing verifies real symbols and benchmarks, historical depth, FX, quote units, splits/dividends, API quota, retention, and licensing for personal display. No provider is considered pre-approved. A free plan is not automatically suitable or authorized because data is accessible from a browser.
 
-## 7. Migrazione da fonti storiche
+## 7. Migration from historical sources
 
-La migrazione usa esportazioni congelate e report di riconciliazione per materializzare nel database le operazioni e le serie storiche necessarie. Dopo la finalizzazione, il database è la fonte autorevole e l’import non introduce una dipendenza operativa dalla fonte originaria.
+Migration uses frozen exports and reconciliation reports to materialize required operations and historical series in the database. After finalization, the database is authoritative and the import introduces no runtime dependency on the original source.
 
-### Fonti e mapping
+### Sources and mapping
 
-- MOVIMENTI: dati di input quali data, account, ticker/ISIN, tipo, quantità, prezzo EUR, commissioni, note, valuta/simbolo; costo residuo, PMC e P&L realizzato sono riconciliati e ricostruiti dal ledger quando possibile.
-- SETUP: valuta base, orizzonte, data iniziale, simboli e valute di quotazione, benchmark attivi.
-- _PRICE_HISTORY: serie data/prezzo per strumento e date/cambi FX, candidata per import storico se valori estraibili e validabili.
-- _PERFORMANCE: serie calcolata utile per riconciliazione, non sostituisce le quotazioni necessarie al ricalcolo.
-- DASHBOARD: riferimento di KPI, viste e grafici, non fonte contabile primaria.
+- MOVIMENTI: input data such as date, account, ticker/ISIN, type, quantity, EUR price, fees, notes, currency/symbol; residual cost, average cost, and realized P&L are reconciled and rebuilt from the ledger whenever possible.
+- SETUP: base currency, horizon, initial date, quote symbols/currencies, active benchmarks.
+- _PRICE_HISTORY: date/price series by instrument and FX dates/rates, eligible for historical import when extractable and validatable.
+- _PERFORMANCE: calculated series useful for reconciliation; it does not replace quotes required for recalculation.
+- DASHBOARD: reference for KPIs, views, and charts, not the primary accounting source.
 
-### Flusso
+### Flow
 
-1. Leggere/esportare senza modificare la fonte originaria.
-2. Mostrare anteprima: conteggi, intervalli, duplicati, errori, valute e righe non riconosciute.
-3. Validare e mappare i dati.
-4. Importare in staging e produrre report di righe accettate/rifiutate e motivazioni.
-5. Riconciliare quantità per ticker/account, costo residuo, PMC, P&L realizzato, dividendi, storico, benchmark e valori di riferimento.
-6. Confermare l’import mantenendo copia grezza con data/versione e hash.
+1. Read/export without modifying the original source.
+2. Show a preview: counts, ranges, duplicates, errors, currencies, and unrecognized rows.
+3. Validate and map data.
+4. Import into staging and produce a report of accepted/rejected rows and reasons.
+5. Reconcile ticker/account quantities, residual cost, average cost, realized P&L, dividends, history, benchmarks, and reference values.
+6. Confirm import while retaining a raw copy with date/version and hash.
 
-Le formule e i valori calcolati della fonte originaria sono dati mobili, non snapshot per definizione. L’import prova a materializzare righe statiche data/prezzo/cambio e verifica copertura e buchi. Se l’estrazione è incompleta, segnala i gap e consente backfill da provider, senza perdere la provenienza.
+Formulas and calculated values in the original source are moving data, not snapshots by definition. Import attempts to materialize static date/price/FX rows and checks coverage and gaps. If extraction is incomplete, it reports gaps and allows provider backfill without losing provenance.
 
-Import ripetibile senza duplicazioni tramite chiavi idempotenti. Discrepanze oltre tolleranza impediscono la finalizzazione o richiedono conferma documentata. La fonte originaria resta invariata; dopo la riconciliazione può essere archivio/export read-only. Nessuna sincronizzazione bidirezionale.
+Imports are repeatable without duplication through idempotency keys. Discrepancies beyond tolerance prevent finalization or require documented confirmation. The original source remains unchanged; after reconciliation it may be retained as a read-only archive/export. No bidirectional synchronization.
 
-## 8. Architettura proposta
+## 8. Proposed architecture
 
-Proposta iniziale da tradurre in piano tecnico dopo l’approvazione della PRD:
+Initial proposal to turn into a technical plan after PRD approval:
 
-- Frontend React + TypeScript.
-- API backend Python + FastAPI, con dominio testabile separato dagli adapter.
-- PostgreSQL fonte autorevole; migrazioni versionate.
-- Worker/scheduler per aggiornamenti EOD, backfill e controlli.
-- Docker Compose per applicazione, worker, database e proxy TLS nel deployment remoto.
-- Configurazione via environment/config; segreti esclusi da repository e immagini.
-- Le API provider sono chiamate solo server-side; il browser non riceve chiavi.
-- UI kit, chart library e template rimangono decisioni del gate UX/UI.
+- React + TypeScript frontend.
+- Python + FastAPI backend, with a testable domain separated from provider adapters.
+- PostgreSQL as the authoritative source; versioned migrations.
+- Worker/scheduler for EOD updates, backfill, and checks.
+- Docker Compose for application, worker, database, and TLS proxy in remote deployment.
+- Environment/configuration-based settings; secrets excluded from repositories and images.
+- Provider APIs called server-side only; the browser never receives keys.
+- UI kit, chart library, and template remain UX/UI-gate decisions.
 
-Prima distribuzione singolo utente, privata e non pubblica per default. Hosting e accesso remoto si decidono in seguito. Nessuna esposizione a Internet senza autenticazione, TLS e aggiornamenti di sicurezza.
+First release: single-user, private, and non-public by default. Hosting and remote access are decided later. No Internet exposure without authentication, TLS, and security updates.
 
-## 9. Sicurezza e operatività
+## 9. Security and operations
 
-- Autenticazione anche per uso personale; sessioni protette e segreti fuori dal codice.
-- Nessun ordine o accesso broker; memorizzare solo i dati portfolio necessari.
-- Validazione server-side e log privi di token/segreti.
-- HTTPS su reti non fidate; accesso predefinito limitato a LAN/VPN.
-- Backup automatici database con retention configurabile, esportazione e restore documentato.
-- Health check di app, DB e worker; visualizzare ultimo update provider e backup.
-- Quotazioni e P&L informativi, non consulenza né prezzo garantito di esecuzione.
+- Authentication even for personal use; protected sessions and secrets outside code.
+- No orders or broker access; store only the portfolio data required.
+- Server-side validation and logs without tokens/secrets.
+- HTTPS on untrusted networks; default access limited to LAN/VPN.
+- Automatic database backups with configurable retention, export, and documented restore.
+- Health checks for app, database, and worker; show latest provider update and backup.
+- Quotes and P&L are informational, not advice or a guaranteed execution price.
 
-## 10. Test e criteri di accettazione
+## 10. Tests and acceptance criteria
 
-### Test richiesti
+### Required tests
 
-- Unit test di quantità, costo medio, vendite parziali/totali, riacquisti, P&L realizzato, dividendi, commissioni, split, FX/GBX, TWR e CAGR.
-- Test adapter con mock per successo, dato mancante, simbolo sconosciuto, rate limit, timeout, dato invalido e retry.
-- Test import per duplicati, date/valute non valide, formule/errori, righe incomplete e idempotenza.
-- Test integrazione PostgreSQL/migrazioni.
-- Test end-to-end UI per CRUD movimento, filtri, range grafici, benchmark, refresh e stati d’errore.
-- Test backup/restore in database temporaneo.
-- Riconciliazione con dataset congelato e tolleranze documentate.
+- Unit tests for quantities, average cost, partial/full sales, repurchases, realized P&L, dividends, fees, splits, FX/GBX, TWR, and CAGR.
+- Adapter tests with mocks for success, missing data, unknown symbol, rate limit, timeout, invalid data, and retry.
+- Import tests for duplicates, invalid dates/currencies, formula/errors, incomplete rows, and idempotency.
+- PostgreSQL/migration integration tests.
+- UI end-to-end tests for operation CRUD, filters, chart ranges, benchmarks, refresh, and error states.
+- Backup/restore test in a temporary database.
+- Reconciliation against a frozen dataset with documented tolerances.
 
-### Accettazione funzionale
+### Functional acceptance
 
-1. Modifiche al registro aggiornano aggregati, account, P&L e grafici senza fogli tecnici.
-2. Quantità aggregate corrispondono alla somma dei movimenti validi.
-3. Vendita totale azzera la quantità ma conserva P&L realizzato e storico.
-4. Un acquisto importante non appare come rendimento positivo solo perché cresce il capitale investito.
-5. Prezzi mancanti/scaduti sono segnalati e non spacciati per aggiornati.
-6. Cambio provider conserva storico e provenienza verificabile.
-7. Range/filtri aggiornano serie e KPI; benchmark espone base, valuta e metodologia.
-8. Import produce riconciliazione prima di diventare fonte ufficiale.
-9. Compose avvia il servizio; dati persistono al riavvio; restore verificato.
-10. I test critici sono eseguibili con comando documentato e passano.
+1. Register changes update aggregates, accounts, P&L, and charts without technical spreadsheets.
+2. Aggregated quantities equal the sum of valid operations.
+3. A full sale sets quantity to zero while retaining realized P&L and history.
+4. A large purchase does not appear as a positive return merely because invested capital increased.
+5. Missing/stale prices are flagged and never presented as current.
+6. Changing provider preserves verifiable history and provenance.
+7. Ranges/filters update series and KPIs; benchmarks expose base, currency, and methodology.
+8. Import produces reconciliation before becoming authoritative.
+9. Compose starts the service; data persists across restarts; restore is verified.
+10. Critical tests run with the documented command and pass.
 
-## 11. Fasi di consegna
+## 11. Delivery phases
 
-1. Revisione PRD: confermare requisiti, metriche e assunzioni.
-2. Design UX/UI: confrontare stili, template e librerie; prototipo e approvazione.
-3. Prova dati: verificare provider, licenze, simboli, storico importato, FX ed eventi societari.
-4. Piano d’implementazione: attività piccole e testabili per DB, calcoli, adapter, import, API, UI e deploy.
-5. Fondazioni: repo, Compose, schema/migrazioni, autenticazione e test.
-6. Registro e calcoli: import staging, CRUD, posizioni, P&L e performance.
-7. Dati: adapter, backfill, scheduler, FX, controlli e stato.
-8. UI e grafici: implementare dopo gate design.
-9. Riconciliazione e rilascio privato: import, end-to-end, backup/restore e hosting.
+1. PRD review: confirm requirements, metrics, and assumptions.
+2. UX/UI design: compare styles, templates, and libraries; prototype and approval.
+3. Data proof: verify provider, licenses, symbols, imported history, FX, and corporate events.
+4. Implementation plan: small, testable tasks for database, calculations, adapters, import, API, UI, and deployment.
+5. Foundations: repository, Compose, schema/migrations, authentication, and tests.
+6. Register and calculations: staging import, CRUD, positions, P&L, and performance.
+7. Data: adapters, backfill, scheduler, FX, checks, and status.
+8. UI and charts: implement after the design gate.
+9. Reconciliation and private release: import, end-to-end tests, backup/restore, and hosting.
 
-## 12. Assunzioni e decisioni aperte
+## 12. Assumptions and open decisions
 
-### Assunzioni iniziali
+### Initial assumptions
 
-- Singolo utente, uso personale e accesso privato.
-- EUR come valuta base.
-- EOD giornaliero sufficiente per la prima versione.
-- Nessun saldo cassa; flussi derivati solo per rendimento.
-- Costo medio ponderato per ticker/account iniziale, coerente col registro.
-- DB fonte unica; file storici solo per import, controllo e archivio/export.
-- FastAPI, PostgreSQL, React e Docker Compose sono la base tecnica proposta.
-- Tema dark professionale; UI kit, chart library e template scelti dopo design.
+- Single user, personal use, private access.
+- EUR as base currency.
+- Daily EOD is sufficient for the first version.
+- No cash balance; derived flows only for return calculations.
+- Initial weighted average cost per ticker/account, consistent with the register.
+- Database as the single source; historical files only for import, checking, and archive/export.
+- FastAPI, PostgreSQL, React, and Docker Compose are the proposed technical base.
+- Professional dark theme; UI kit, chart library, and template selected after design.
 
-### Da decidere prima del piano tecnico
+### Decide before the technical plan
 
-- Hosting (Mac mini, NAS, VPS o altro) e accesso remoto LAN/VPN/Internet.
-- Provider EOD iniziale, costo e termini di licenza.
-- Definizione finale di TWR/total return, dividendi, benchmark e valori iniziali approssimativi.
-- Politica di correzione/cancellazione e audit.
-- Range/filtri iniziali e necessità di esportazione PNG.
-- Stile, componenti, chart library e template dopo il prototipo.
+- Hosting (Mac mini, NAS, VPS, or other) and remote access over LAN/VPN/Internet.
+- Initial EOD provider, cost, and license terms.
+- Final definition of TWR/total return, dividends, benchmarks, and approximate initial values.
+- Correction/deletion and audit policy.
+- Initial ranges/filters and need for PNG export.
+- Style, components, chart library, and template after the prototype.
 
-## 13. Glossario
+## 13. Glossary
 
-- EOD: prezzo di fine giornata del mercato.
-- P&L realizzato: utile/perdita contabilizzato sulle quantità vendute.
-- P&L non realizzato: utile/perdita sulle quantità ancora detenute.
-- TWR: rendimento che neutralizza l’effetto dei flussi di capitale.
-- Provider adapter: interfaccia che normalizza le risposte dei provider nel formato Investix.
-- Staleness: età del dato rispetto alla sessione EOD attesa per il mercato.
+- EOD: market end-of-day price.
+- Realized P&L: profit/loss recognized on sold quantities.
+- Unrealized P&L: profit/loss on quantities still held.
+- TWR: return that neutralizes the effect of capital flows.
+- Provider adapter: interface that normalizes provider responses into the Investix format.
+- Staleness: age of a value relative to the expected market EOD session.

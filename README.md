@@ -71,6 +71,20 @@ Optional:
 - INVESTIX_TWELVE_DATA_API_KEY: enables Twelve Data for EOD and live quotes. Keep it server-side.
 - INVESTIX_LIVE_REFRESH_MINUTES, INVESTIX_LIVE_BATCH_SIZE, INVESTIX_LIVE_CREDITS_PER_MINUTE, INVESTIX_LIVE_DAILY_CREDITS, INVESTIX_LIVE_DAILY_RESERVE_PERCENT, INVESTIX_LIVE_SESSION_IDLE_MINUTES: live-quote quota and polling policy.
 
+### Twelve Data setup
+
+Investix currently uses Twelve Data as its optional market-data provider. To obtain an API key:
+
+1. Create an account at [twelvedata.com](https://twelvedata.com/).
+2. Open the account dashboard and copy the API key from the API-key section.
+3. Add it only to the server-side `.env` file:
+
+       INVESTIX_TWELVE_DATA_API_KEY=your_key_here
+
+4. Recreate the API and worker containers with `docker compose up -d --build`.
+
+Do not put the key in `frontend/`, commit it to Git, paste it into browser configuration, or replace the empty value in `.env.example`. The free plan is subject to provider credits and rate limits; Investix batches requests, caches live results, reserves daily credits, and reports quota exhaustion as a wait state.
+
 The Twelve Data free-plan safeguards batch at most eight symbols per request, cache results, reserve daily credits, and stop polling closed markets where possible. If the provider quota is exhausted, the API preserves the last valid quote and the UI asks the user to wait for the next provider window instead of showing a blocking error.
 
 ## Application flow
@@ -78,8 +92,8 @@ The Twelve Data free-plan safeguards batch at most eight symbols per request, ca
 1. Log in, or use the development bypass only on a private development instance.
 2. Review the dashboard KPIs and current quotes.
 3. Use the ticker and account filters for portfolio views; the Today P&L total remains portfolio-wide for the selected account context.
-4. Use Registro to add operations or correct/cancel an existing entry through the audit-preserving workflow.
-5. Use Impostazioni to choose chart/quote ranges, live refresh, and KPI visibility/order. These preferences are local to the browser and do not require a service restart.
+4. Use the Register page to add operations or correct/cancel an existing entry through the audit-preserving workflow.
+5. Use the Settings page to choose chart/quote ranges, live refresh, and KPI visibility/order. These preferences are local to the browser and do not require a service restart.
 
 The dashboard uses Italian number formatting: comma for decimals, dot for thousands, and EUR values. KPI amounts are compacted as K€ (for example +1,25K€).
 

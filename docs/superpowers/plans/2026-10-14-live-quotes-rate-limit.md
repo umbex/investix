@@ -45,7 +45,7 @@
 - `backend/app/providers/base.py` — add the live quote interface and normalized result type.
 - `backend/app/main.py` (or existing router registration) — register live quote routes.
 - `frontend/src/api.ts` — add live quote types and API calls.
-- `frontend/src/App.tsx` and the Quotazioni component — visibility-aware polling, 5-minute default, freshness/status display, and cleanup.
+- `frontend/src/App.tsx` and the Quotes component — visibility-aware polling, 5-minute default, freshness/status display, and cleanup.
 - `backend/tests/providers/` — mock `/quote` batch responses, partial failures, timeout, and rate-limit responses.
 - `docs/operations.md` — document quota assumptions, live session behavior, and fallback to persisted EOD values.
 
@@ -100,7 +100,7 @@
 **Interfaces:**
 
 - `fetchLiveQuotes(symbols, sessionId) -> LiveQuotesSnapshot` in `frontend/src/api.ts`.
-- Quotazioni uses one module-wide range-independent polling interval of five minutes.
+- Quotes uses one module-wide range-independent polling interval of five minutes.
 
 - [ ] Add frontend tests for immediate first fetch, five-minute polling, `document.visibilityState === hidden` pause, visibility resume, unmount cleanup, and error/stale rendering.
 - [ ] Implement one session per browser tab and avoid per-row requests.
