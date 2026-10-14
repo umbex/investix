@@ -58,7 +58,6 @@ describe("App", () => {
     const positionsHeading = screen.getByRole("heading", { name: "Posizioni" });
     const valueHeading = screen.getByRole("heading", { name: "Valore nel tempo" });
     const benchmarkHeading = screen.getByRole("heading", { name: "Rendimento vs benchmark" });
-    const stateHeading = screen.getByRole("heading", { name: "Stato dati" });
     const twrLabel = screen.getByText("Rendimento TWR");
     expect(quotesHeading).toBeInTheDocument();
     expect(screen.getByText(/1,23K€/)).toBeInTheDocument();
@@ -66,7 +65,7 @@ describe("App", () => {
     expect(twrLabel.compareDocumentPosition(quotesHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(quotesHeading.compareDocumentPosition(positionsHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(positionsHeading.compareDocumentPosition(valueHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(benchmarkHeading.compareDocumentPosition(stateHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.queryByRole("heading", { name: "Stato dati" })).not.toBeInTheDocument();
     expect((await screen.findAllByText("VWCE")).length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText("Today P&L")).toBeInTheDocument();
     expect(screen.getByRole("img", { name: /Mercato (aperto|chiuso)/ })).toBeInTheDocument();
@@ -75,6 +74,8 @@ describe("App", () => {
     expect(screen.queryByRole("link", { name: "Posizioni CSV" })).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Performance CSV" })).not.toBeInTheDocument();
     expect(screen.getByLabelText("Quotazione mancante")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Impostazioni" }));
+    expect(await screen.findByRole("heading", { name: "Stato dati" })).toBeInTheDocument();
     expect(fetchMock.mock.calls[0][0]).toBe("/api/auth/mode");
     expect(fetchMock.mock.calls[1][0]).toBe("/api/auth/login");
     expect(fetchMock.mock.calls[2][0]).toBe("/api/portfolio");
