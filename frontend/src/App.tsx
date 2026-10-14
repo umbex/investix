@@ -1,7 +1,7 @@
 import { AppShell, Badge, Button, Card, Group, Loader, MantineProvider, Modal, NumberInput, Select, SimpleGrid, Stack, Table, Text, TextInput, Title, Tooltip } from "@mantine/core";
 import { FormEvent, useEffect, useRef, useState } from "react";
 
-import { api, type Operation, type PerformanceSummary, type PortfolioSummary, type QuotesSummary, type WorkerHealth } from "./api";
+import { api, type LiveQuotesSummary, type Operation, type PerformanceSummary, type PortfolioSummary, type QuotesSummary, type WorkerHealth } from "./api";
 import "./styles.css";
 
 const euro = new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR", minimumFractionDigits: 2, maximumFractionDigits: 2, useGrouping: true });
@@ -59,6 +59,7 @@ function Dashboard({ onOpenRegistry }: { onOpenRegistry: () => void }) {
   const [performance, setPerformance] = useState<PerformanceSummary>();
   const [workerHealth, setWorkerHealth] = useState<WorkerHealth>({ status: "unknown" });
   const [quotes, setQuotes] = useState<QuotesSummary>();
+  const [liveQuotes, setLiveQuotes] = useState<LiveQuotesSummary>();
   const [quoteRange, setQuoteRange] = useState("3M");
   const [range, setRange] = useState("Tutto");
   const [ticker, setTicker] = useState("");
@@ -70,12 +71,27 @@ function Dashboard({ onOpenRegistry }: { onOpenRegistry: () => void }) {
   useEffect(() => { void load(""); }, []);
   const changeQuoteRange = (value: string | null) => { const nextRange = value || "3M"; setQuoteRange(nextRange); void api.quotes(rangeDays(nextRange)).then(setQuotes).catch(() => setQuotes(undefined)); };
   const positions = summary?.positions ?? [];
+  const liveSessionId = useRef(`tab-${Math.random().toString(36).slice(2)}`);
+  useEffect(() => {
+    const symbols = positions.map((position) => position.ticker);
+    if (!symbols.length) return;
+    let disposed = false;
+    const refresh = () => {
+      if (document.visibilityState === "hidden") return;
+      void api.liveQuotes(symbols, liveSessionId.current).then((result) => { if (!disposed) setLiveQuotes(result); }).catch(() => undefined);
+    };
+    refresh();
+    const timer = window.setInterval(refresh, 5 * 60 * 1000);
+    const onVisibility = () => { if (document.visibilityState === "visible") refresh(); };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => { disposed = true; window.clearInterval(timer); document.removeEventListener("visibilitychange", onVisibility); };
+  }, [positions.map((position) => position.ticker).join(",")]);
   return <Stack gap="lg" className="dashboard">
     <Group justify="space-between" align="end" className="dashboard-title"><div><Text c="dimmed">Portafoglio privato</Text><Title order={2}>Panoramica</Title></div><Badge color={summary?.valuation_status === "available" ? "teal" : "yellow"}>{summary?.valuation_status === "available" ? "Quotazioni disponibili" : "Quotazioni mancanti"}</Badge></Group>
     <Group className="filter-bar" align="end"><Select label="Ticker" placeholder="Tutti" clearable value={ticker || null} onChange={(value) => setTicker(value || "")} data={positions.map((position) => position.ticker)} /><Select label="Account" placeholder="Tutti" clearable value={account || null} onChange={(value) => setAccount(value || "")} data={Array.from(new Set(positions.flatMap((position) => position.accounts.map((item) => item.name)))).sort()} /><TextInput label="Da" type="date" value={dateFrom} onChange={(event) => setDateFrom(event.currentTarget.value)} /><TextInput label="A" type="date" value={dateTo} onChange={(event) => setDateTo(event.currentTarget.value)} /><Button onClick={() => void load()}>Applica</Button><Button variant="subtle" onClick={() => { setTicker(""); setAccount(""); setDateFrom(""); setDateTo(""); void load(""); }}>Azzera</Button></Group>
     {error && <Card withBorder><Text c="red">{error}</Text><Button mt="sm" size="xs" onClick={() => void load()}>Riprova</Button></Card>}
     {!summary && !error ? <Group justify="center" py="xl"><Loader aria-label="Caricamento portafoglio" /></Group> : <><SimpleGrid cols={{ base: 1, xs: 2, md: 5 }} spacing="md"><Metric label="Valore portafoglio" value={kpiAmount(summary?.kpis.market_value_eur)} note={summary?.valuation_status === "available" ? "Ultima osservazione persistita" : "Quotazioni mancanti"} /><Metric label="Capitale aperto" value={kpiAmount(summary?.kpis.open_cost_eur)} note="Costo ricostruito dal ledger" /><Metric label="P&L realizzato" value={kpiAmount(summary?.kpis.realized_pnl_eur)} note="Vendite registrate" positive={Number(summary?.kpis.realized_pnl_eur) > 0} /><Metric label="P&L non realizzato" value={kpiAmount(summary?.kpis.unrealized_pnl_eur)} note="Disponibile con quotazioni EOD" positive={Number(summary?.kpis.unrealized_pnl_eur) > 0} /><Metric label="Rendimento TWR" value={performance?.total_return == null ? "N/D" : new Intl.NumberFormat("it-IT", { style: "percent", maximumFractionDigits: 2 }).format(Number(performance.total_return))} note="Rendimento ponderato nel tempo" positive={Number(performance?.total_return) > 0} /></SimpleGrid>
-      <Card withBorder radius="md"><Group justify="space-between" align="center"><Title order={3}>Quotazioni</Title><Select aria-label="Storico quotazioni" size="xs" value={quoteRange} onChange={changeQuoteRange} data={RANGE_OPTIONS} /></Group><QuotesTable quotes={quotes} /></Card>
+      <Card withBorder radius="md"><Group justify="space-between" align="center"><Title order={3}>Quotazioni</Title><Select aria-label="Storico quotazioni" size="xs" value={quoteRange} onChange={changeQuoteRange} data={RANGE_OPTIONS} /></Group><QuotesTable quotes={quotes} liveQuotes={liveQuotes} /></Card>
       <Card withBorder radius="md" className="positions"><Group justify="space-between"><Title order={3}>Posizioni</Title><Button variant="subtle" size="xs" onClick={onOpenRegistry}>Registro operazioni</Button></Group><PositionTable positions={positions} totalOpenCost={summary!.kpis.open_cost_eur} totalMarketValue={summary!.kpis.market_value_eur} /></Card>
       <Card withBorder radius="md" className="chart-card"><Group justify="space-between"><Title order={3}>Valore nel tempo</Title><Group gap="xs"><Select aria-label="Intervallo grafico" size="xs" value={range} onChange={(value) => setRange(value || "Tutto")} data={RANGE_OPTIONS} /><Badge variant="outline">EUR</Badge></Group></Group><PortfolioChart performance={performance} range={range} /><Text size="xs" c="dimmed">{performance?.methodology || "Serie non disponibile: servono osservazioni storiche valide."}</Text></Card>
       <Card withBorder radius="md" className="chart-card"><Group justify="space-between"><Title order={3}>Rendimento vs benchmark</Title><Group gap="xs"><Select aria-label="Intervallo benchmark" size="xs" value={range} onChange={(value) => setRange(value || "Tutto")} data={RANGE_OPTIONS} /><Badge variant="outline">Base comune 0%</Badge></Group></Group><BenchmarkChart performance={performance} range={range} /><Text size="xs" c="dimmed">I benchmark price-return escludono i dividendi: la comparabilità è indicata nella legenda.</Text></Card>
@@ -99,9 +115,11 @@ function latestObservation(positions: PortfolioSummary["positions"]): string {
   return latest ? new Date(latest).toLocaleString("it-IT") : "Non disponibile";
 }
 
-function QuotesTable({ quotes }: { quotes?: QuotesSummary }) {
+function QuotesTable({ quotes, liveQuotes }: { quotes?: QuotesSummary; liveQuotes?: LiveQuotesSummary }) {
   if (!quotes?.items?.length) return <Text c="dimmed" mt="md">Quotazioni non disponibili.</Text>;
-  return <Table.ScrollContainer minWidth={680}><Table mt="md" striped><Table.Thead><Table.Tr><Table.Th>Ticker</Table.Th><Table.Th>Ultimo</Table.Th><Table.Th>Variazione</Table.Th><Table.Th>Trend</Table.Th></Table.Tr></Table.Thead><Table.Tbody>{quotes.items.map((item) => <Table.Tr key={item.ticker}><Table.Td><Text fw={600}>{item.ticker}</Text><Text size="xs" c="dimmed">{new Date(item.observed_at).toLocaleString("it-IT")}</Text></Table.Td><Table.Td>{amount(item.price_eur)}</Table.Td><Table.Td c={item.change_percent == null ? "dimmed" : Number(item.change_percent) >= 0 ? "teal" : "red"}>{item.change_percent == null ? "N/D" : `${Number(item.change_percent).toLocaleString("it-IT", { maximumFractionDigits: 2 })}%`}</Table.Td><Table.Td><Sparkline points={item.points.map((point) => Number(point.price_eur))} label={`Trend ${item.ticker}`} /></Table.Td></Table.Tr>)}</Table.Tbody></Table></Table.ScrollContainer>;
+  const liveByTicker = new Map((liveQuotes?.items ?? []).map((item) => [item.ticker, item]));
+  const retryLabel = liveQuotes?.retry_after ? ` dopo le ${new Date(liveQuotes.retry_after * 1000).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })}` : "";
+  return <><Table.ScrollContainer minWidth={680}><Table mt="md" striped><Table.Thead><Table.Tr><Table.Th>Ticker</Table.Th><Table.Th>Ultimo</Table.Th><Table.Th>Variazione</Table.Th><Table.Th>Trend</Table.Th></Table.Tr></Table.Thead><Table.Tbody>{quotes.items.map((item) => { const live = liveByTicker.get(item.ticker); const livePrice = live?.price_eur ?? (live ? `${live.price} ${live.currency}` : null); return <Table.Tr key={item.ticker}><Table.Td><Text fw={600}>{item.ticker}</Text><Text size="xs" c="dimmed">{live ? `Live · ${new Date(live.observed_at).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })}` : new Date(item.observed_at).toLocaleString("it-IT")}</Text></Table.Td><Table.Td>{livePrice == null ? amount(item.price_eur) : typeof livePrice === "string" && livePrice.includes(" ") ? livePrice : amount(livePrice)}</Table.Td><Table.Td c={(live?.change_percent ?? item.change_percent) == null ? "dimmed" : Number(live?.change_percent ?? item.change_percent) >= 0 ? "teal" : "red"}>{(live?.change_percent ?? item.change_percent) == null ? "N/D" : `${Number(live?.change_percent ?? item.change_percent).toLocaleString("it-IT", { maximumFractionDigits: 2 })}%`}</Table.Td><Table.Td><Sparkline points={item.points.map((point) => Number(point.price_eur))} label={`Trend ${item.ticker}`} /></Table.Td></Table.Tr>; })}</Table.Tbody></Table></Table.ScrollContainer>{liveQuotes?.status === "quota_exhausted" && <Text size="xs" c="yellow" mt="xs">Limite provider raggiunto: attendere la prossima finestra disponibile{retryLabel}.</Text>}{liveQuotes?.status === "pending" && <Text size="xs" c="dimmed" mt="xs">Aggiornamento live in coda.</Text>}</>;
 }
 
 function Sparkline({ points, label }: { points: number[]; label: string }) {

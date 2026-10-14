@@ -8,7 +8,7 @@ from decimal import Decimal, InvalidOperation
 from urllib.parse import urlencode
 from urllib.request import urlopen
 
-from app.providers.base import MarketObservation, ProviderError, normalize_observation
+from app.providers.base import LiveQuote, MarketObservation, ProviderError, normalize_observation
 
 
 class TwelveDataAdapter:
@@ -46,6 +46,40 @@ class TwelveDataAdapter:
             return observation.__class__(**{**observation.__dict__, "source_symbol": symbol, "venue": meta.get("exchange"), "quote_unit": "share", "fx_provider": "ecb-reference" if currency != "EUR" else None})
         except (KeyError, IndexError, ValueError, InvalidOperation) as error:
             raise ProviderError(f"Risposta Twelve Data non valida: {error}") from error
+
+    def fetch_live_quotes(self, symbols: list[str]) -> list[LiveQuote]:
+        normalized = list(dict.fromkeys(symbol.strip() for symbol in symbols if symbol.strip()))
+        if not normalized:
+            return []
+        query = urlencode({"symbol": ",".join(normalized), "apikey": self.api_key})
+        try:
+            payload = json.loads(self._download(f"https://api.twelvedata.com/quote?{query}"))
+        except (OSError, json.JSONDecodeError) as error:
+            raise ProviderError(f"Twelve Data non raggiungibile: {error}", retryable=True) from error
+        if "code" in payload:
+            message = str(payload.get("message", "errore provider"))
+            retryable = "credit" in message.lower() or str(payload.get("code")) == "429"
+            if retryable:
+                raise ProviderError(f"Twelve Data: crediti o rate limit esauriti ({message})", retryable=True)
+            raise ProviderError(f"Twelve Data: {message}", retryable=False)
+        quotes: list[LiveQuote] = []
+        for symbol in normalized:
+            value = payload.get(symbol)
+            if value is None:
+                raise ProviderError(f"Twelve Data: simbolo non disponibile ({symbol})")
+            if isinstance(value, dict) and "code" in value:
+                message = str(value.get("message", "errore provider"))
+                raise ProviderError(f"Twelve Data: simbolo non disponibile ({message})")
+            try:
+                currency = str(value.get("currency", "EUR")).upper()
+                observed_at = datetime.fromisoformat(str(value["datetime"]).replace(" ", "T")).replace(tzinfo=timezone.utc)
+                price = Decimal(str(value.get("close") or value["price"]))
+                change = value.get("percent_change")
+                fx = Decimal("1") if currency == "EUR" else (self._fx_to_eur(observed_at) if self._fx_to_eur else None)
+                quotes.append(LiveQuote(ticker=symbol, price=price, change_percent=Decimal(str(change)) if change not in (None, "") else None, observed_at=observed_at, currency=currency, price_eur=price * fx if fx else None, provider=self.provider_name, source_symbol=symbol, raw=value))
+            except (KeyError, TypeError, ValueError, InvalidOperation) as error:
+                raise ProviderError(f"Risposta Twelve Data non valida: {error}") from error
+        return quotes
 
     def fetch_history(self, symbol: str, *, ticker: str | None = None, start_date: date, end_date: date) -> Iterable[MarketObservation]:
         query = urlencode({"symbol": symbol, "interval": "1day", "start_date": start_date.isoformat(), "end_date": end_date.isoformat(), "outputsize": 5000, "apikey": self.api_key})

@@ -52,3 +52,26 @@ def test_twelve_data_fetches_bounded_history_without_inventing_missing_days() ->
 
     assert [quote.observed_at.date().isoformat() for quote in quotes] == ["2026-01-06", "2026-01-05"]
     assert [quote.raw_price for quote in quotes] == [Decimal("101"), Decimal("100")]
+
+
+def test_twelve_data_fetches_live_batch_quotes() -> None:
+    payload = '{"AAPL":{"symbol":"AAPL","close":"250.10","percent_change":"1.25","datetime":"2026-10-14 15:00:00","currency":"USD"},"MSFT":{"symbol":"MSFT","close":"520.20","percent_change":"-0.50","datetime":"2026-10-14 15:00:00","currency":"USD"}}'
+    adapter = TwelveDataAdapter(api_key="test-key", fx_to_eur=lambda _: Decimal("0.9"), download=lambda url: payload)
+
+    quotes = adapter.fetch_live_quotes(["AAPL", "MSFT"])
+
+    assert [quote.ticker for quote in quotes] == ["AAPL", "MSFT"]
+    assert quotes[0].price == Decimal("250.10")
+    assert quotes[0].change_percent == Decimal("1.25")
+    assert quotes[0].currency == "USD"
+
+
+def test_twelve_data_live_batch_preserves_unknown_symbols_and_quota_state() -> None:
+    unknown = TwelveDataAdapter(api_key="test-key", download=lambda _: '{"MISSING":{"code":400,"message":"Invalid symbol"}}')
+    with pytest.raises(ProviderError, match="simbolo"):
+        unknown.fetch_live_quotes(["MISSING"])
+
+    limited = TwelveDataAdapter(api_key="test-key", download=lambda _: '{"code":429,"message":"API credits exhausted"}')
+    with pytest.raises(ProviderError, match="crediti") as error:
+        limited.fetch_live_quotes(["AAPL"])
+    assert error.value.retryable is True

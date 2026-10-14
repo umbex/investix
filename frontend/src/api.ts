@@ -54,6 +54,23 @@ export type QuotesSummary = {
   }[];
 };
 
+export type LiveQuotesSummary = {
+  status: "fresh" | "pending" | "stale" | "quota_exhausted" | "provider_disabled" | "error";
+  items: {
+    ticker: string;
+    price: string;
+    price_eur: string | null;
+    currency: string;
+    change_percent: string | null;
+    observed_at: string;
+    provider: string;
+    status: "fresh" | "stale";
+  }[];
+  statuses: Record<string, string>;
+  credits_used: number;
+  retry_after: number | null;
+};
+
 export type PerformanceSummary = {
   points: { date: string; value_eur: string; external_flow_eur: string; cumulative_return: string | null }[];
   total_return: string | null;
@@ -148,4 +165,5 @@ export const api = {
   },
   workerHealth: () => request<WorkerHealth>("/health/worker"),
   quotes: (days: number) => request<QuotesSummary>(`/quotes?days=${days}`),
+  liveQuotes: (symbols: string[], sessionId: string) => request<LiveQuotesSummary>(`/quotes/live?symbols=${encodeURIComponent(symbols.join(","))}&session_id=${encodeURIComponent(sessionId)}`),
 };

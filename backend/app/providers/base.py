@@ -28,6 +28,20 @@ class MarketObservation:
     fx_provider: str | None = None
 
 
+@dataclass(frozen=True)
+class LiveQuote:
+    ticker: str
+    price: Decimal
+    change_percent: Decimal | None
+    observed_at: datetime
+    currency: str
+    price_eur: Decimal | None
+    provider: str
+    source_symbol: str | None = None
+    status: str = "fresh"
+    raw: dict | None = None
+
+
 def normalize_observation(
     *, provider: str,
     ticker: str,

@@ -14,6 +14,12 @@ class Settings(BaseSettings):
     dev_auth_bypass: bool = False
     twelve_data_api_key: str | None = None
     worker_status_file: str | None = None
+    live_refresh_minutes: int = 5
+    live_batch_size: int = 8
+    live_credits_per_minute: int = 8
+    live_daily_credits: int = 800
+    live_daily_reserve_percent: int = 20
+    live_session_idle_minutes: int = 10
 
     model_config = SettingsConfigDict(env_file=".env", env_prefix="INVESTIX_", extra="ignore")
 
@@ -23,6 +29,10 @@ class Settings(BaseSettings):
             raise ValueError("INVESTIX_SESSION_SECRET must contain at least 32 characters")
         if self.environment.lower() == "production" and self.dev_auth_bypass:
             raise ValueError("INVESTIX_DEV_AUTH_BYPASS cannot be enabled in production")
+        if self.live_batch_size < 1 or self.live_batch_size > self.live_credits_per_minute:
+            raise ValueError("INVESTIX_LIVE_BATCH_SIZE cannot exceed INVESTIX_LIVE_CREDITS_PER_MINUTE")
+        if self.live_refresh_minutes < 1 or self.live_daily_reserve_percent < 0 or self.live_daily_reserve_percent >= 100:
+            raise ValueError("Configurazione live quotes non valida")
         return self
 
 

@@ -36,6 +36,7 @@ I comandi leggono `.env`; in una verifica separata si può impostare `INVESTIX_E
 - Il benchmark iniziale è configurabile senza riaprire Sheets: `python -m app.importing.benchmark_catalog_cli --name "Nasdaq-100" --ticker QQQ --symbol QQQ --venue NASDAQ --currency USD --methodology price_return --note "Proxy ETF; dividendi esclusi."`.
 - Il worker non abilita provider pubblici di default. Il CSV manuale mantiene l’uso personale a basso volume e la provenienza del dato.
 - Twelve Data è opzionale e usa solo la variabile server-side `INVESTIX_TWELVE_DATA_API_KEY`; non inserire la chiave nel frontend o in `.env.example` valorizzato.
+- Le quotazioni live sono on-demand dalla dashboard: il backend usa batch da massimo 8 ticker, cache temporanea e una riserva giornaliera. Se il provider esaurisce la quota, la UI mantiene l’ultimo dato valido e indica di attendere la prossima finestra, senza generare errori bloccanti. Le osservazioni live non vengono scritte nel DB; storico e KPI restano basati sui dati EOD persistiti.
 - Il refresh EOD è separato per mercato: Europa alle 18:00 `Europe/Rome`, USA alle 16:30 `America/New_York`. Le conversioni DST sono gestite dai fusi IANA.
 - Per riconciliare e finalizzare un import, prima generare il report: `python -m app.importing.reconcile_cli /data/movimenti.csv --report /data/reconciliation.json`, poi eseguire `python -m app.importing.cli --finalize /data/movimenti.csv --reconciliation-report /data/reconciliation.json`.
 - Commissioni e dividendi assenti restano sconosciuti; non vanno convertiti in zero nell’operatività.
