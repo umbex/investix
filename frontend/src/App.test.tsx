@@ -53,6 +53,7 @@ describe("App", () => {
 
     await waitFor(() => expect(screen.getByRole("heading", { name: "Panoramica" })).toBeInTheDocument());
     expect((await screen.findAllByText("VWCE")).length).toBeGreaterThanOrEqual(1);
+    expect(screen.queryByRole("heading", { name: "Allocazione" })).not.toBeInTheDocument();
     expect(screen.getAllByLabelText("Ticker")[0]).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Posizioni CSV" })).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Performance CSV" })).not.toBeInTheDocument();
