@@ -20,9 +20,22 @@ MARKET_SCHEDULES = {"EU": (18, 0), "US": (16, 30)}
 MARKET_TIMEZONES = {"EU": ZoneInfo("Europe/Rome"), "US": ZoneInfo("America/New_York")}
 
 
-def due_market_jobs(now, *, last_runs: dict[str, date]) -> list[str]:
-    """Return at most one daily job per market; callers provide local market time."""
-    return [market for market, scheduled in MARKET_SCHEDULES.items() if (now.hour, now.minute) == scheduled and last_runs.get(market) != now.date()]
+def due_market_jobs(now, *, last_runs: dict[str, date], market: str | None = None) -> list[str]:
+    """Return one daily job per market once its scheduled time has passed.
+
+    Using ``>=`` instead of exact minute matching allows the worker to recover
+    after a restart, a delayed loop iteration, or a short container outage.
+    """
+    current = (now.hour, now.minute)
+    candidates = [(name, scheduled) for name, scheduled in MARKET_SCHEDULES.items() if (market is None or name == market) and current >= scheduled and last_runs.get(name) != now.date()]
+    if market is None:
+        # The helper historically received one market's local clock. When
+        # called without an explicit market, only recover a schedule crossed
+        # within the last hour; the timezone-aware caller below handles full
+        # downtime recovery for every market explicitly.
+        elapsed = [(name, scheduled, current[0] * 60 + current[1] - (scheduled[0] * 60 + scheduled[1])) for name, scheduled in candidates]
+        candidates = [(name, scheduled) for name, scheduled, minutes in elapsed if minutes <= 60]
+    return [name for name, _ in candidates]
 
 
 def due_jobs_at(now_utc, *, last_runs: dict[str, date]) -> list[str]:
@@ -30,7 +43,7 @@ def due_jobs_at(now_utc, *, last_runs: dict[str, date]) -> list[str]:
     due: list[str] = []
     for market, timezone in MARKET_TIMEZONES.items():
         local = now_utc.astimezone(timezone)
-        if market in due_market_jobs(local, last_runs=last_runs):
+        if market in due_market_jobs(local, last_runs=last_runs, market=market):
             due.append(market)
     return due
 

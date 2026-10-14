@@ -36,12 +36,20 @@ def test_eod_schedule_runs_each_market_once_at_its_local_time() -> None:
     assert due_market_jobs(datetime(2026, 10, 12, 18, 0), last_runs={"EU": date(2026, 10, 12)}) == []
 
 
+def test_eod_schedule_recovers_after_scheduled_minute_was_missed() -> None:
+    from app.worker import due_market_jobs
+    from datetime import datetime
+
+    assert due_market_jobs(datetime(2026, 10, 12, 18, 7), last_runs={}) == ["EU"]
+    assert due_market_jobs(datetime(2026, 10, 12, 17, 59), last_runs={}) == []
+
+
 def test_eod_schedule_converts_utc_to_each_market_timezone() -> None:
     from app.worker import due_jobs_at
     from datetime import timezone
 
     assert due_jobs_at(datetime(2026, 10, 12, 16, 0, tzinfo=timezone.utc), last_runs={}) == ["EU"]
-    assert due_jobs_at(datetime(2026, 10, 12, 20, 30, tzinfo=timezone.utc), last_runs={}) == ["US"]
+    assert due_jobs_at(datetime(2026, 10, 12, 20, 30, tzinfo=timezone.utc), last_runs={}) == ["EU", "US"]
 
 
 def test_scheduled_refresh_marks_due_market_after_success() -> None:
