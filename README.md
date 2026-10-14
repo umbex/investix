@@ -149,6 +149,8 @@ Read docs/operations.md before changing retention, restoring data, or exposing t
 
 The current release is intentionally a single private portfolio. Multi-portfolio support is documented as a future design in docs/superpowers/plans/2026-10-14-multi-portfolio.md. Other implementation plans and decisions are kept under docs/superpowers/.
 
+Historical backfill for newly added instruments is also future work. When an operation is entered with a past trade date, the date is stored in the ledger, but the application does not yet automatically request the provider history from that date. The backfill service is already prepared in `backend/app/services/market_data.py`; it still needs to be connected to the ticker-entry workflow with quota, retry, and user-visible status handling.
+
 ## License and disclaimer
 
 This repository is intended for private/personal use. No investment advice is provided. Market data can be delayed, incomplete, or wrong; verify important values independently before making financial decisions.
