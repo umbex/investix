@@ -17,7 +17,11 @@ def create_operation(session: Session, payload: OperationCreate, *, commit: bool
         instrument = Instrument(ticker=ticker)
         session.add(instrument)
         session.flush()
-    values = payload.model_dump(exclude={"account_name", "ticker"})
+    if payload.quote_symbol:
+        instrument.quote_symbol = payload.quote_symbol.upper()
+        instrument.quote_venue = payload.quote_venue
+        instrument.quote_currency = payload.quote_currency.upper() if payload.quote_currency else None
+    values = payload.model_dump(exclude={"account_name", "ticker", "quote_symbol", "quote_venue", "quote_currency"})
     operation = Operation(account_id=account.id, instrument_id=instrument.id, **values)
     session.add(operation)
     if commit:

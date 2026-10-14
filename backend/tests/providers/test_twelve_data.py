@@ -75,3 +75,22 @@ def test_twelve_data_live_batch_preserves_unknown_symbols_and_quota_state() -> N
     with pytest.raises(ProviderError, match="crediti") as error:
         limited.fetch_live_quotes(["AAPL"])
     assert error.value.retryable is True
+
+
+def test_twelve_data_parses_crypto_quote_currency_from_pair_when_metadata_is_missing() -> None:
+    payload = '{"BTC/EUR":{"symbol":"BTC/EUR","exchange":"Binance","close":"73385.98","datetime":"2026-10-14"}}'
+    adapter = TwelveDataAdapter(api_key="test-key", download=lambda _: payload)
+
+    quote = adapter.fetch_live_quotes(["BTC/EUR"])[0]
+
+    assert quote.currency == "EUR"
+    assert quote.price == Decimal("73385.98")
+
+
+def test_twelve_data_searches_symbols_and_normalizes_listing_metadata() -> None:
+    payload = '{"data":[{"symbol":"EQQQ","instrument_name":"Invesco EQQQ NASDAQ-100 UCITS ETF Dist","exchange":"MTA","currency":"EUR","type":"ETF"}]}'
+    adapter = TwelveDataAdapter(api_key="test-key", download=lambda _: payload)
+
+    results = adapter.search_symbols("EQQQ")
+
+    assert results == [{"symbol": "EQQQ", "name": "Invesco EQQQ NASDAQ-100 UCITS ETF Dist", "exchange": "MTA", "currency": "EUR", "type": "ETF"}]

@@ -71,7 +71,7 @@ class TwelveDataAdapter:
                 message = str(value.get("message", "errore provider"))
                 raise ProviderError(f"Twelve Data: simbolo non disponibile ({message})")
             try:
-                currency = str(value.get("currency", "EUR")).upper()
+                currency = str(value.get("currency") or symbol.rsplit("/", 1)[-1] or "EUR").upper()
                 observed_at = datetime.fromisoformat(str(value["datetime"]).replace(" ", "T")).replace(tzinfo=timezone.utc)
                 price = Decimal(str(value.get("close") or value["price"]))
                 change = value.get("percent_change")
@@ -80,6 +80,30 @@ class TwelveDataAdapter:
             except (KeyError, TypeError, ValueError, InvalidOperation) as error:
                 raise ProviderError(f"Risposta Twelve Data non valida: {error}") from error
         return quotes
+
+    def search_symbols(self, query: str) -> list[dict[str, str | None]]:
+        normalized = query.strip()
+        if not normalized:
+            return []
+        params = urlencode({"symbol": normalized, "apikey": self.api_key})
+        try:
+            payload = json.loads(self._download(f"https://api.twelvedata.com/symbol_search?{params}"))
+        except (OSError, json.JSONDecodeError) as error:
+            raise ProviderError(f"Twelve Data non raggiungibile: {error}", retryable=True) from error
+        if "code" in payload:
+            message = str(payload.get("message", "errore provider"))
+            raise ProviderError(f"Twelve Data: {message}", retryable="credit" in message.lower() or str(payload.get("code")) == "429")
+        return [
+            {
+                "symbol": str(item.get("symbol", "")),
+                "name": str(item.get("instrument_name", "")),
+                "exchange": str(item.get("exchange", "")),
+                "currency": str(item.get("currency", "")),
+                "type": str(item.get("type", "")),
+            }
+            for item in payload.get("data", [])
+            if item.get("symbol")
+        ]
 
     def fetch_history(self, symbol: str, *, ticker: str | None = None, start_date: date, end_date: date) -> Iterable[MarketObservation]:
         query = urlencode({"symbol": symbol, "interval": "1day", "start_date": start_date.isoformat(), "end_date": end_date.isoformat(), "outputsize": 5000, "apikey": self.api_key})

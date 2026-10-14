@@ -11,6 +11,9 @@ OperationKind = Literal["BUY", "SELL", "OPENING_BALANCE", "DIVIDEND", "FEE", "SP
 class OperationCreate(BaseModel):
     account_name: str = Field(min_length=1, max_length=200)
     ticker: str = Field(min_length=1, max_length=64)
+    quote_symbol: str | None = Field(default=None, min_length=1, max_length=64)
+    quote_venue: str | None = Field(default=None, min_length=1, max_length=128)
+    quote_currency: str | None = Field(default=None, min_length=3, max_length=8)
     kind: OperationKind
     quantity: Decimal
     unit_price_eur: Decimal = Field(ge=0)

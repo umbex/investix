@@ -71,6 +71,14 @@ export type LiveQuotesSummary = {
   retry_after: number | null;
 };
 
+export type InstrumentLookupResult = {
+  symbol: string;
+  name: string;
+  exchange: string;
+  currency: string;
+  type: string;
+};
+
 export type PerformanceSummary = {
   points: { date: string; value_eur: string; external_flow_eur: string; cumulative_return: string | null }[];
   total_return: string | null;
@@ -166,4 +174,5 @@ export const api = {
   workerHealth: () => request<WorkerHealth>("/health/worker"),
   quotes: (days: number) => request<QuotesSummary>(`/quotes?days=${days}`),
   liveQuotes: (symbols: string[], sessionId: string) => request<LiveQuotesSummary>(`/quotes/live?symbols=${encodeURIComponent(symbols.join(","))}&session_id=${encodeURIComponent(sessionId)}`),
+  lookupInstrument: (query: string) => request<{ status: string; items: InstrumentLookupResult[]; message?: string }>(`/instruments/lookup?query=${encodeURIComponent(query)}`),
 };
