@@ -14,6 +14,9 @@ def test_quotes_returns_latest_change_and_range_filtered_history(monkeypatch) ->
     with sessions() as session:
         instrument = session.scalar(select(Instrument).where(Instrument.ticker == "VWCE"))
         assert instrument is not None
+        instrument.quote_symbol = "VWCE"
+        instrument.quote_venue = "XETRA"
+        session.commit()
         session.add_all([
             Observation(instrument_id=instrument.id, provider="test", price=Decimal("100"), raw_price=Decimal("100"), observed_at=datetime(2026, 1, 1, tzinfo=timezone.utc)),
             Observation(instrument_id=instrument.id, provider="test", price=Decimal("105"), raw_price=Decimal("105"), observed_at=datetime(2026, 1, 2, tzinfo=timezone.utc)),
@@ -34,6 +37,12 @@ def test_quotes_returns_latest_change_and_range_filtered_history(monkeypatch) ->
 def test_dashboard_summary_exposes_account_breakdown_and_unavailable_valuation(monkeypatch) -> None:
     client = client_with_database(monkeypatch)
     create_buy(client)
+    with client.app.state.session_factory() as session:
+        instrument = session.scalar(select(Instrument).where(Instrument.ticker == "VWCE"))
+        assert instrument is not None
+        instrument.quote_symbol = "VWCE"
+        instrument.quote_venue = "XETRA"
+        session.commit()
     response = client.post(
         "/api/operations",
         json={
@@ -58,6 +67,7 @@ def test_dashboard_summary_exposes_account_breakdown_and_unavailable_valuation(m
     assert {item["name"] for item in position["accounts"]} == {"Directa", "Fineco"}
     assert position["market_data_status"] == "missing"
     assert position["market_data_provider"] is None
+    assert position["market_data_venue"] == "XETRA"
     assert summary["allocations"][0]["weight"] is None
     assert {item["account"] for item in summary["allocations"][0]["accounts"]} == {"Directa", "Fineco"}
     assert {item["account"] for item in summary["account_allocations"]} == {"Directa", "Fineco"}

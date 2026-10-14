@@ -73,7 +73,7 @@ function Dashboard({ onOpenRegistry }: { onOpenRegistry: () => void }) {
   const positions = summary?.positions ?? [];
   const liveSessionId = useRef(`tab-${Math.random().toString(36).slice(2)}`);
   useEffect(() => {
-    const symbols = positions.map((position) => position.ticker);
+    const symbols = positions.filter((position) => marketStatus(position.market_data_venue).open).map((position) => position.ticker);
     if (!symbols.length) return;
     let disposed = false;
     const refresh = () => {
