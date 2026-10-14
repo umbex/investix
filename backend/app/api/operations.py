@@ -47,12 +47,12 @@ def list_ledger(ticker: str | None = Query(default=None), session: Session = Dep
 def revise(operation_id: int, payload: OperationRevisionRequest, session: Session = Depends(get_session)) -> OperationResponse:
     operation = revise_operation(session, operation_id, payload)
     if operation is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Operazione non disponibile")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Operation unavailable")
     return serialize(operation, session)
 
 
 @router.post("/{operation_id}/cancel", status_code=status.HTTP_204_NO_CONTENT)
 def cancel(operation_id: int, payload: CancelRequest, session: Session = Depends(get_session)) -> Response:
     if not cancel_operation(session, operation_id, payload.reason):
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Operazione non disponibile")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Operation unavailable")
     return Response(status_code=status.HTTP_204_NO_CONTENT)

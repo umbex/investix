@@ -17,6 +17,6 @@ def lookup(query: str = Query(..., min_length=1, max_length=64)) -> dict:
         items = TwelveDataAdapter(api_key=settings.twelve_data_api_key).search_symbols(query)
     except ProviderError as error:
         if error.retryable:
-            return {"status": "temporarily_unavailable", "items": [], "message": "Provider non disponibile: riprovare più tardi."}
+            return {"status": "temporarily_unavailable", "items": [], "message": "Provider unavailable: try again later."}
         raise HTTPException(status_code=422, detail=str(error)) from error
     return {"status": "ok", "items": items}

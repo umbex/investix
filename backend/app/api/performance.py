@@ -24,7 +24,7 @@ def summary(
 
 def _payload(session: Session, *, ticker: str | None, date_from: date | None, date_to: date | None) -> dict:
     if date_from is not None and date_to is not None and date_from > date_to:
-        raise HTTPException(status_code=422, detail="date_from deve essere precedente o uguale a date_to")
+        raise HTTPException(status_code=422, detail="date_from must be earlier than or equal to date_to")
     series = portfolio_series(session, ticker=ticker)
     points = [point for point in series.points if (date_from is None or point.day >= date_from) and (date_to is None or point.day <= date_to)]
     benchmarks = benchmark_series(session, series)

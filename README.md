@@ -2,7 +2,7 @@
 
 Investix is a private portfolio-tracking application for reconstructing a securities ledger, monitoring current positions, and reading portfolio performance in EUR. It is designed for personal use on a trusted LAN/Tailscale network, with PostgreSQL as the authoritative runtime store.
 
-**Current version:** 0.3.1 ([Semantic Versioning](https://semver.org/))
+**Current version:** 0.4.0 ([Semantic Versioning](https://semver.org/))
 
 ## What it does
 
@@ -15,6 +15,14 @@ Investix is a private portfolio-tracking application for reconstructing a securi
 - Runs EOD market-data refreshes in a separate worker and keeps live quote polling on-demand while the dashboard is open.
 
 Market data is informational only. Investix does not guarantee that prices are complete, timely, or accurate; always reconcile against the broker or an authoritative source.
+
+## Demo preview
+
+Open `http://localhost:5173/?demo=1` to view a self-contained synthetic dashboard without login, API calls, or database access.
+
+![Investix synthetic dashboard preview](docs/assets/dashboard-demo.png)
+
+All values shown in this preview are synthetic and do not represent real portfolio data.
 
 ## Architecture
 

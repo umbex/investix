@@ -21,6 +21,6 @@ def mode() -> dict[str, bool]:
 def login(payload: LoginRequest, request: Request) -> Response:
     settings = get_settings()
     if not settings.dev_auth_bypass and not valid_credentials(payload.username, payload.password):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Credenziali non valide")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
     request.session["username"] = settings.admin_username if settings.dev_auth_bypass else payload.username
     return Response(status_code=status.HTTP_204_NO_CONTENT)

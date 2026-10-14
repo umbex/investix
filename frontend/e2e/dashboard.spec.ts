@@ -24,10 +24,10 @@ test("desktop dashboard filters date range and exposes CSV exports", async ({ pa
   const performanceRequests: string[] = [];
   page.on("request", (request) => { if (request.url().includes("/api/performance?")) performanceRequests.push(request.url()); });
   await page.goto("/");
-  await page.getByLabel("Utente").fill("investix");
+  await page.getByLabel("Username").fill("investix");
   await page.getByLabel("Password").fill("password");
-  await page.getByRole("button", { name: "Accedi" }).click();
-  await expect(page.getByRole("heading", { name: "Panoramica" })).toBeVisible();
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await expect(page.getByRole("heading", { name: "Quotes" })).toBeVisible();
   await expect(page.getByRole("cell", { name: "VWCE", exact: true })).toBeVisible();
   await page.getByLabel("Da").fill("2026-01-01");
   await page.getByLabel("A", { exact: true }).fill("2026-01-31");
@@ -38,9 +38,9 @@ test("desktop dashboard filters date range and exposes CSV exports", async ({ pa
 
 test("mobile dashboard keeps the portfolio and worker status visible", async ({ page }) => {
   await page.goto("/");
-  await page.getByLabel("Utente").fill("investix");
+  await page.getByLabel("Username").fill("investix");
   await page.getByLabel("Password").fill("password");
-  await page.getByRole("button", { name: "Accedi" }).click();
+  await page.getByRole("button", { name: "Sign in" }).click();
   await expect(page.getByRole("cell", { name: "VWCE", exact: true })).toBeVisible();
   await expect(page.getByText("Attivo · provider disabilitato")).toBeVisible();
 });

@@ -17,7 +17,7 @@ class CsvPreviewRequest(BaseModel):
 @router.post("/stocks26/preview")
 def preview(payload: CsvPreviewRequest) -> dict:
     if len(payload.csv.encode("utf-8")) > 5_000_000:
-        raise HTTPException(status_code=413, detail="Export CSV troppo grande")
+        raise HTTPException(status_code=413, detail="CSV export is too large")
     with NamedTemporaryFile(mode="w", encoding="utf-8", suffix=".csv", delete=False) as temporary:
         temporary.write(payload.csv)
         path = Path(temporary.name)

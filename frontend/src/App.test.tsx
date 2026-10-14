@@ -14,14 +14,28 @@ import { App } from "./App";
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
+  window.history.pushState({}, "", "/");
 });
 
 describe("App", () => {
-  it("renders the Italian private portfolio shell", () => {
+  it("renders a self-contained synthetic demo without calling the API", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    window.history.pushState({}, "", "/?demo=1");
+
+    render(<App />);
+
+    expect((await screen.findAllByText("Demo data")).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByRole("heading", { name: "Quotes" })).toBeInTheDocument();
+    expect(screen.getAllByText("MSFT").length).toBeGreaterThanOrEqual(1);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("renders the English private portfolio shell", () => {
     render(<App />);
 
     expect(screen.getByRole("heading", { name: "Investix" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Accedi" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Sign in" })).toBeInTheDocument();
   });
 
   it("shows imported positions after private login", async () => {
@@ -49,34 +63,34 @@ describe("App", () => {
     vi.stubGlobal("fetch", fetchMock);
     render(<App />);
 
-    fireEvent.change(screen.getByRole("textbox", { name: /Utente/ }), { target: { value: "investix" } });
+    fireEvent.change(screen.getByRole("textbox", { name: /Username/ }), { target: { value: "investix" } });
     fireEvent.change(screen.getByLabelText(/Password/), { target: { value: "password" } });
-    fireEvent.click(screen.getByRole("button", { name: "Accedi" }));
+    fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
 
-    await waitFor(() => expect(screen.getByRole("heading", { name: "Quotazioni" })).toBeInTheDocument());
-    const quotesHeading = screen.getByRole("heading", { name: "Quotazioni" });
-    const positionsHeading = screen.getByRole("heading", { name: "Posizioni" });
-    const valueHeading = screen.getByRole("heading", { name: "Valore nel tempo" });
-    const benchmarkHeading = screen.getByRole("heading", { name: "Rendimento vs benchmark" });
-    const twrLabel = screen.getByText("Rendimento TWR");
-    expect(screen.queryByText("Quotazioni disponibili")).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole("heading", { name: "Quotes" })).toBeInTheDocument());
+    const quotesHeading = screen.getByRole("heading", { name: "Quotes" });
+    const positionsHeading = screen.getByRole("heading", { name: "Positions" });
+    const valueHeading = screen.getByRole("heading", { name: "Value over time" });
+    const benchmarkHeading = screen.getByRole("heading", { name: "Return vs benchmark" });
+    const twrLabel = screen.getByText("TWR return");
+    expect(screen.queryByText("Quotes available")).not.toBeInTheDocument();
     expect(quotesHeading).toBeInTheDocument();
     expect(screen.getByText(/1,23K€/)).toBeInTheDocument();
-    expect(screen.getAllByRole("textbox", { name: /Intervallo|Storico quotazioni/ })).toHaveLength(3);
+    expect(screen.getAllByRole("textbox", { name: /Chart range|Benchmark range|Quotes history/ })).toHaveLength(3);
     expect(twrLabel.compareDocumentPosition(quotesHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(quotesHeading.compareDocumentPosition(positionsHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(positionsHeading.compareDocumentPosition(valueHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(screen.queryByRole("heading", { name: "Stato dati" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Data status" })).not.toBeInTheDocument();
     expect((await screen.findAllByText("VWCE")).length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText("Today P&L").length).toBeGreaterThanOrEqual(2);
-    expect(screen.getByRole("img", { name: /Mercato (aperto|chiuso)/ })).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: /Market (open|closed)/ })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Allocazione" })).not.toBeInTheDocument();
     expect(screen.getAllByLabelText("Ticker")[0]).toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: "Posizioni CSV" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Positions CSV" })).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Performance CSV" })).not.toBeInTheDocument();
-    expect(screen.getByLabelText("Quotazione mancante")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Impostazioni" }));
-    expect(await screen.findByRole("heading", { name: "Stato dati" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Quote missing")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Settings" }));
+    expect(await screen.findByRole("heading", { name: "Data status" })).toBeInTheDocument();
     expect(fetchMock.mock.calls[0][0]).toBe("/api/auth/mode");
     expect(fetchMock.mock.calls[1][0]).toBe("/api/auth/login");
     expect(fetchMock.mock.calls[2][0]).toBe("/api/portfolio");
@@ -93,10 +107,10 @@ describe("App", () => {
     vi.stubGlobal("fetch", fetchMock);
     render(<App />);
 
-    await waitFor(() => expect(screen.getByRole("heading", { name: "Quotazioni" })).toBeInTheDocument());
-    fireEvent.click(screen.getByRole("button", { name: "Registro" }));
+    await waitFor(() => expect(screen.getByRole("heading", { name: "Quotes" })).toBeInTheDocument());
+    fireEvent.click(screen.getByRole("button", { name: "Register" }));
 
-    expect(await screen.findByRole("button", { name: "Modifica" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Annulla" })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "Edit" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Cancel" })).toBeInTheDocument();
   });
 });
