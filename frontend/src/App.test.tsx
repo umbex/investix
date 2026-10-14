@@ -54,7 +54,12 @@ describe("App", () => {
     fireEvent.click(screen.getByRole("button", { name: "Accedi" }));
 
     await waitFor(() => expect(screen.getByRole("heading", { name: "Panoramica" })).toBeInTheDocument());
-    expect(screen.getByRole("heading", { name: "Quotazioni" })).toBeInTheDocument();
+    const quotesHeading = screen.getByRole("heading", { name: "Quotazioni" });
+    const positionsHeading = screen.getByRole("heading", { name: "Posizioni" });
+    const valueHeading = screen.getByRole("heading", { name: "Valore nel tempo" });
+    expect(quotesHeading).toBeInTheDocument();
+    expect(quotesHeading.compareDocumentPosition(positionsHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(positionsHeading.compareDocumentPosition(valueHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect((await screen.findAllByText("VWCE")).length).toBeGreaterThanOrEqual(1);
     expect(screen.queryByRole("heading", { name: "Allocazione" })).not.toBeInTheDocument();
     expect(screen.getAllByLabelText("Ticker")[0]).toBeInTheDocument();
