@@ -75,8 +75,8 @@ def _positions(session: Session, *, ticker: str | None = None, account: str | No
             "market_data_status": "available" if latest is not None else "missing",
             "last_observed_at": latest.observed_at if latest is not None else None,
             "market_data_provider": latest.provider if latest is not None else None,
-            "market_data_source_symbol": latest.source_symbol if latest is not None else instrument.quote_symbol,
-            "market_data_venue": latest.venue if latest is not None else instrument.quote_venue,
+            "market_data_source_symbol": (latest.source_symbol if latest is not None else None) or instrument.quote_symbol,
+            "market_data_venue": (latest.venue if latest is not None else None) or instrument.quote_venue,
             "market_data_fx_provider": latest.fx_provider if latest is not None else None,
             "accounts": [
                 {
