@@ -29,6 +29,21 @@ def test_configured_credentials_create_a_session(monkeypatch) -> None:
     assert "session" in response.cookies
 
 
+def test_dev_auth_bypass_authenticates_without_credentials(monkeypatch) -> None:
+    monkeypatch.setenv("INVESTIX_DEV_AUTH_BYPASS", "true")
+    monkeypatch.setenv("INVESTIX_SESSION_SECRET", "test-session-secret-with-at-least-32chars")
+    get_settings.cache_clear()
+    client = TestClient(create_app())
+
+    assert client.get("/api/auth/mode").json() == {"bypass": True}
+    assert client.get("/api/portfolio").status_code != 401
+
+
+def test_production_rejects_dev_auth_bypass() -> None:
+    with pytest.raises(ValidationError, match="INVESTIX_DEV_AUTH_BYPASS"):
+        Settings(environment="production", session_secret="test-session-secret-with-at-least-32chars", dev_auth_bypass=True)
+
+
 def test_production_rejects_missing_or_short_session_secret() -> None:
     with pytest.raises(ValidationError, match="INVESTIX_SESSION_SECRET"):
         Settings(environment="production", session_secret="short")
@@ -40,3 +55,11 @@ def test_settings_ignores_docker_only_environment_variables(monkeypatch) -> None
     settings = Settings(session_secret="test-session-secret-with-at-least-32chars")
 
     assert settings.database_url.startswith("postgresql+")
+
+
+def test_settings_exposes_twelve_data_key_only_server_side(monkeypatch) -> None:
+    monkeypatch.setenv("INVESTIX_TWELVE_DATA_API_KEY", "free-test-key")
+
+    settings = Settings(session_secret="test-session-secret-with-at-least-32chars")
+
+    assert settings.twelve_data_api_key == "free-test-key"

@@ -54,3 +54,21 @@ def test_import_accepts_actual_title_case_headers(tmp_path: Path) -> None:
     export.write_text(header + "02/01/2026,Directa,VWCE,,Acquisto,2,100,,,,,,VWCE,EUR\n")
 
     assert preview_movimenti(export).valid_rows == 1
+
+
+def test_import_preserves_context_and_maps_operational_types(tmp_path: Path) -> None:
+    export = tmp_path / "movimenti.csv"
+    export.write_text(
+        HEADER
+        + "02/01/2026,Directa,EQQQ,IE0032077012,Saldo iniziale,2,100,,,,,Data e costo stimati,EQQQ.MI,GBP\n"
+        + "03/01/2026,Directa,EQQQ,IE0032077012,Trasferimento in entrata,1,101,,,,,Da altro conto,EQQQ.MI,GBP\n"
+        + '04/01/2026,Directa,EQQQ,IE0032077012,Rettifica,"-0,5",0,,,,,Correzione quantita,EQQQ.MI,GBP\n'
+    )
+
+    preview = preview_movimenti(export)
+
+    assert preview.errors == []
+    assert [row.kind for row in preview.rows] == ["OPENING_BALANCE", "TRANSFER_IN", "ADJUSTMENT"]
+    assert preview.rows[0].note == "Data e costo stimati"
+    assert preview.rows[0].original_currency == "GBP"
+    assert preview.rows[2].quantity == Decimal("-0.5")

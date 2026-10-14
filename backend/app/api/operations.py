@@ -24,6 +24,11 @@ def serialize(operation: Operation, session: Session) -> OperationResponse:
         source_order=operation.source_order,
         fee_eur=operation.fee_eur,
         dividend_eur=operation.dividend_eur,
+        original_unit_price=operation.original_unit_price,
+        original_currency=operation.original_currency,
+        settlement_date=operation.settlement_date,
+        note=operation.note,
+        is_approximate=operation.is_approximate,
     )
 
 

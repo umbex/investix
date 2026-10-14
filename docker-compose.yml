@@ -23,6 +23,14 @@ services:
         condition: service_healthy
     environment:
       INVESTIX_DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-investix}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@db:5432/${POSTGRES_DB:-investix}
+      INVESTIX_SESSION_SECRET: ${INVESTIX_SESSION_SECRET:?Set INVESTIX_SESSION_SECRET in .env}
+      INVESTIX_ADMIN_USERNAME: ${INVESTIX_ADMIN_USERNAME:-investix}
+      INVESTIX_ADMIN_PASSWORD: ${INVESTIX_ADMIN_PASSWORD:?Set INVESTIX_ADMIN_PASSWORD in .env}
+      INVESTIX_DEV_AUTH_BYPASS: ${INVESTIX_DEV_AUTH_BYPASS:-false}
+      INVESTIX_TWELVE_DATA_API_KEY: ${INVESTIX_TWELVE_DATA_API_KEY:-}
+      INVESTIX_WORKER_STATUS_FILE: /var/run/investix-worker/status.json
+    volumes:
+      - investix-worker-status:/var/run/investix-worker:ro
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000
     ports:
       - "0.0.0.0:8000:8000"
@@ -37,6 +45,11 @@ services:
         condition: service_healthy
     environment:
       INVESTIX_DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-investix}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@db:5432/${POSTGRES_DB:-investix}
+      INVESTIX_SESSION_SECRET: ${INVESTIX_SESSION_SECRET:?Set INVESTIX_SESSION_SECRET in .env}
+      INVESTIX_TWELVE_DATA_API_KEY: ${INVESTIX_TWELVE_DATA_API_KEY:-}
+      INVESTIX_WORKER_STATUS_FILE: /var/run/investix-worker/status.json
+    volumes:
+      - investix-worker-status:/var/run/investix-worker
     command: python -m app.worker
 
   web:
@@ -49,3 +62,4 @@ services:
 
 volumes:
   investix-postgres:
+  investix-worker-status:

@@ -6,6 +6,9 @@ from app.settings import get_settings
 
 
 def require_session(request: Request) -> str:
+    settings = get_settings()
+    if settings.dev_auth_bypass:
+        return settings.admin_username
     username = request.session.get("username")
     if not username:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Autenticazione richiesta")

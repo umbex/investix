@@ -45,6 +45,11 @@ class Operation(Identified):
     trade_date: Mapped[date] = mapped_column(Date, server_default=func.current_date())
     source_order: Mapped[int] = mapped_column(Integer, server_default="0")
     cancelled: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    original_unit_price: Mapped[Numeric | None] = mapped_column(Numeric(24, 10), nullable=True)
+    original_currency: Mapped[str | None] = mapped_column(String(8), nullable=True)
+    settlement_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    is_approximate: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
 
 
 class OperationRevision(Identified):
@@ -65,6 +70,12 @@ class Observation(Identified):
     currency: Mapped[str] = mapped_column(String(8), server_default="EUR")
     fx_to_eur: Mapped[Numeric] = mapped_column(Numeric(24, 10), server_default="1")
     observed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    source_symbol: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    venue: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    quote_unit: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    price_field: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    status: Mapped[str] = mapped_column(String(32), server_default="valid", nullable=False)
+    fx_provider: Mapped[str | None] = mapped_column(String(100), nullable=True)
 
 
 class Benchmark(Identified):

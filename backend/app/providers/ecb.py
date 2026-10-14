@@ -2,7 +2,7 @@
 
 import csv
 from collections.abc import Callable
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal, InvalidOperation
 from io import StringIO
 from urllib.parse import urlencode
@@ -40,6 +40,10 @@ class EcbUsdEurAdapter:
         if not rates:
             raise ProviderError("ECB non ha restituito cambi USD/EUR per l'intervallo richiesto")
         return rates
+
+    def fetch_rate(self, target: date) -> Decimal:
+        """Resolve a quote-day rate, including weekends and short market holidays."""
+        return self.rate_for(target, self.fetch_rates(target - timedelta(days=14), target))
 
     @staticmethod
     def rate_for(target: date, rates: dict[date, Decimal]) -> Decimal:

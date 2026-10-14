@@ -33,3 +33,9 @@ def test_ecb_adapter_rejects_missing_or_invalid_rows() -> None:
 
     with pytest.raises(ProviderError, match="ECB"):
         adapter.fetch_rates(date(2026, 1, 2), date(2026, 1, 2))
+
+
+def test_ecb_adapter_fetches_the_prior_rate_for_a_single_quote_day() -> None:
+    adapter = EcbUsdEurAdapter(download=lambda _: "TIME_PERIOD,OBS_VALUE\n2026-10-10,1.25\n")
+
+    assert adapter.fetch_rate(date(2026, 10, 12)) == Decimal("0.8")

@@ -74,6 +74,10 @@ def _positions(session: Session, *, ticker: str | None = None, account: str | No
             "dividends_eur": sum((item.recorded_eur or Decimal("0") for item in dividends), Decimal("0")) if dividends and all(item.recorded_eur is not None for item in dividends) else None,
             "market_data_status": "available" if latest is not None else "missing",
             "last_observed_at": latest.observed_at if latest is not None else None,
+            "market_data_provider": latest.provider if latest is not None else None,
+            "market_data_source_symbol": latest.source_symbol if latest is not None else None,
+            "market_data_venue": latest.venue if latest is not None else None,
+            "market_data_fx_provider": latest.fx_provider if latest is not None else None,
             "accounts": [
                 {
                     "name": item["name"],
@@ -93,8 +97,36 @@ def _summary(positions: list[dict]) -> dict:
     market_value = sum(values, Decimal("0")) if has_all_values else None
     open_cost = sum((item["open_cost_eur"] for item in positions), Decimal("0"))
     realized = sum((item["realized_pnl_eur"] for item in positions), Decimal("0"))
+    allocations = [
+        {
+            "ticker": item["ticker"],
+            "market_value_eur": item["market_value_eur"],
+            "weight": item["market_value_eur"] / market_value if has_all_values and market_value else None,
+            "open_cost_eur": item["open_cost_eur"],
+            "cost_weight": item["open_cost_eur"] / open_cost if open_cost else None,
+            "accounts": [
+                {
+                    "account": account["name"],
+                    "open_cost_eur": account["open_cost_eur"],
+                    "weight": account["open_cost_eur"] / item["open_cost_eur"] if item["open_cost_eur"] else None,
+                }
+                for account in item["accounts"]
+            ],
+        }
+        for item in positions
+    ]
+    account_costs: dict[str, Decimal] = defaultdict(lambda: Decimal("0"))
+    for position in positions:
+        for account in position["accounts"]:
+            account_costs[account["name"]] += account["open_cost_eur"]
+    account_allocations = [
+        {"account": name, "open_cost_eur": cost, "weight": cost / open_cost if open_cost else None}
+        for name, cost in sorted(account_costs.items())
+    ]
     return {
         "positions": positions,
+        "allocations": allocations,
+        "account_allocations": account_allocations,
         "kpis": {
             "open_cost_eur": open_cost,
             "market_value_eur": market_value,

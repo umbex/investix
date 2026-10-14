@@ -81,10 +81,12 @@ def _with_cumulative_returns(points: list[PortfolioSeriesPoint]) -> list[Portfol
 
 
 def _quantity_delta(operation: HistoricalOperation) -> Decimal:
-    if operation.kind == "BUY":
+    if operation.kind in {"BUY", "OPENING_BALANCE", "TRANSFER_IN"}:
         return operation.quantity
-    if operation.kind == "SELL":
+    if operation.kind in {"SELL", "TRANSFER_OUT"}:
         return -operation.quantity
+    if operation.kind == "ADJUSTMENT":
+        return operation.quantity
     if operation.kind == "SPLIT":
         return operation.quantity
     return Decimal("0")
@@ -92,7 +94,7 @@ def _quantity_delta(operation: HistoricalOperation) -> Decimal:
 
 def _external_flow(operation: HistoricalOperation) -> Decimal:
     value = operation.quantity * operation.unit_price_eur
-    if operation.kind == "BUY":
+    if operation.kind in {"BUY", "OPENING_BALANCE"}:
         return value
     if operation.kind == "SELL":
         return -value
