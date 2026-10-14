@@ -1,6 +1,7 @@
 .env
 .env.*
 !.env.example
+/data/
 .DS_Store
 .venv/
 venv/
@@ -9,6 +10,8 @@ dist/
 build/
 __pycache__/
 *.pyc
+*.egg-info/
+*.tsbuildinfo
 .pytest_cache/
 .coverage
 playwright-report/
