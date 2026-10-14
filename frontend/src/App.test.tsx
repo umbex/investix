@@ -9,7 +9,7 @@ vi.mock("echarts/renderers", () => ({ SVGRenderer: {} }));
 vi.mock("echarts/components", () => ({ GraphicComponent: {}, GridComponent: {}, TooltipComponent: {}, LegendComponent: {}, DataZoomComponent: {} }));
 vi.mock("echarts/charts", () => ({ LineChart: {} }));
 
-import { App } from "./App";
+import { App, parseNumericInput } from "./App";
 
 afterEach(() => {
   cleanup();
@@ -17,6 +17,12 @@ afterEach(() => {
 });
 
 describe("App", () => {
+  it("normalizes Italian numeric input for the API", () => {
+    expect(parseNumericInput("1.234,56")).toBe("1234.56");
+    expect(parseNumericInput("1234.5")).toBe("1234.5");
+    expect(parseNumericInput("")).toBe("");
+  });
+
   it("renders the Italian private portfolio shell", () => {
     render(<App />);
 
