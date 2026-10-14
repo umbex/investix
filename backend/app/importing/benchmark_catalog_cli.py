@@ -1,4 +1,4 @@
-"""Configure an initial benchmark without making Google Sheets a runtime dependency."""
+"""Configure an initial benchmark without an external spreadsheet runtime dependency."""
 
 import argparse
 

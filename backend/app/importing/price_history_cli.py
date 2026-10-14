@@ -1,4 +1,4 @@
-"""Persist a frozen normalized historical-price CSV without a Sheets runtime link."""
+"""Persist a frozen normalized historical-price CSV without an external spreadsheet link."""
 
 import argparse
 from pathlib import Path

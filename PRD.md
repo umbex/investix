@@ -8,11 +8,11 @@
 
 ## 1. Visione
 
-Investix è uno strumento web personale, affidabile e professionale per registrare le operazioni, conoscere il valore corrente e storico del portafoglio, misurare guadagni e rendimenti e confrontarli con benchmark configurabili. Funziona in container Docker con un database persistente e non dipende da Google Sheets per calcoli o aggiornamenti futuri.
+Investix è uno strumento web personale, affidabile e professionale per registrare le operazioni, conoscere il valore corrente e storico del portafoglio, misurare guadagni e rendimenti e confrontarli con benchmark configurabili. Funziona in container Docker con un database persistente e non dipende da fonti esterne di foglio elettronico per calcoli o aggiornamenti futuri.
 
 “Personale” descrive l’utente iniziale e il modello di accesso, non un compromesso sulla qualità: coerenza dei calcoli, tracciabilità, gestione degli errori, grafici interattivi, sicurezza e procedure di backup sono requisiti di prodotto.
 
-Il database Investix sarà la fonte ufficiale dei dati operativi. Il foglio Google esistente serve per migrazione e riconciliazione, non come servizio runtime né come seconda fonte modificabile.
+Il database Investix sarà la fonte ufficiale dei dati operativi. Le fonti storiche usate per la migrazione servono solo per import e riconciliazione, non come servizio runtime né come seconda fonte modificabile.
 
 ## 2. Utente e criteri di successo
 
@@ -52,7 +52,7 @@ La soluzione è riuscita quando l’utente può:
 - Consulenza finanziaria/fiscale o raccomandazioni di investimento.
 - Multiutenza, ruoli, condivisione pubblica o SaaS.
 - Quotazioni intraday, streaming e alert per trading.
-- Dipendenza operativa da Google Sheets o sincronizzazione bidirezionale.
+- Dipendenza operativa da fonti esterne di foglio elettronico o sincronizzazione bidirezionale.
 
 ## 4. Requisiti funzionali
 
@@ -171,7 +171,7 @@ Aggiornamenti idempotenti; retry con backoff e rate limiting; un errore non canc
 ### 6.2 Frequenza e storico
 
 - Prima versione EOD giornaliera dopo la chiusura del relativo mercato; nessuno streaming/intraday.
-- L’interfaccia provider supporta aggiornamenti futuri, backfill e recupero dei buchi anche se lo storico iniziale viene importato dal foglio.
+- L’interfaccia provider supporta aggiornamenti futuri, backfill e recupero dei buchi anche se lo storico iniziale viene importato da un file congelato.
 - Pianificazione per mercato e fuso orario; non assumere che borse USA ed Europa chiudano allo stesso orario.
 - Lo storico normalizzato è conservato in PostgreSQL e validato prima di alimentare KPI e grafici.
 
@@ -188,9 +188,9 @@ Aggiornamenti idempotenti; retry con backoff e rate limiting; un errore non canc
 
 La prova di copertura verifica simboli reali e benchmark, profondità dello storico, FX, unità di quotazione, split/dividendi, quota API, conservazione e licenza per visualizzazione personale. Nessun provider è considerato già approvato. Un piano gratuito non è automaticamente adeguato o autorizzato perché i dati sono accessibili da browser.
 
-## 7. Migrazione da Google Sheets
+## 7. Migrazione da fonti storiche
 
-Per l'identificativo del workbook, l'inventario dei fogli, il mapping dei campi e l'analisi del flusso formule/dati consultare [GOOGLE_SHEET_REFERENCE.md](./GOOGLE_SHEET_REFERENCE.md). È la scheda tecnica di riferimento per comprendere STOCKS-26 senza dover riesaminare ogni volta il foglio; riporta anche limiti, assunzioni e verifiche richieste prima dell'import.
+La migrazione usa esportazioni congelate e report di riconciliazione per materializzare nel database le operazioni e le serie storiche necessarie. Dopo la finalizzazione, il database è la fonte autorevole e l’import non introduce una dipendenza operativa dalla fonte originaria.
 
 ### Fonti e mapping
 
@@ -202,16 +202,16 @@ Per l'identificativo del workbook, l'inventario dei fogli, il mapping dei campi 
 
 ### Flusso
 
-1. Leggere/esportare senza modificare il foglio.
+1. Leggere/esportare senza modificare la fonte originaria.
 2. Mostrare anteprima: conteggi, intervalli, duplicati, errori, valute e righe non riconosciute.
 3. Validare e mappare i dati.
 4. Importare in staging e produrre report di righe accettate/rifiutate e motivazioni.
 5. Riconciliare quantità per ticker/account, costo residuo, PMC, P&L realizzato, dividendi, storico, benchmark e valori di riferimento.
 6. Confermare l’import mantenendo copia grezza con data/versione e hash.
 
-Le formule GOOGLEFINANCE sono dati mobili, non snapshot per definizione. L’import prova a materializzare righe statiche data/prezzo/cambio e verifica copertura e buchi; non presume che API Sheets o Apps Script restituiscano sempre lo storico. Se l’estrazione è incompleta, segnala i gap e consente backfill da provider, senza perdere la provenienza.
+Le formule e i valori calcolati della fonte originaria sono dati mobili, non snapshot per definizione. L’import prova a materializzare righe statiche data/prezzo/cambio e verifica copertura e buchi. Se l’estrazione è incompleta, segnala i gap e consente backfill da provider, senza perdere la provenienza.
 
-Import ripetibile senza duplicazioni tramite chiavi idempotenti. Discrepanze oltre tolleranza impediscono la finalizzazione o richiedono conferma documentata. Il foglio resta invariato; dopo la riconciliazione può essere archivio/export read-only. Nessuna sincronizzazione bidirezionale.
+Import ripetibile senza duplicazioni tramite chiavi idempotenti. Discrepanze oltre tolleranza impediscono la finalizzazione o richiedono conferma documentata. La fonte originaria resta invariata; dopo la riconciliazione può essere archivio/export read-only. Nessuna sincronizzazione bidirezionale.
 
 ## 8. Architettura proposta
 
@@ -267,7 +267,7 @@ Prima distribuzione singolo utente, privata e non pubblica per default. Hosting 
 
 1. Revisione PRD: confermare requisiti, metriche e assunzioni.
 2. Design UX/UI: confrontare stili, template e librerie; prototipo e approvazione.
-3. Prova dati: verificare provider, licenze, simboli, storico Sheets, FX ed eventi societari.
+3. Prova dati: verificare provider, licenze, simboli, storico importato, FX ed eventi societari.
 4. Piano d’implementazione: attività piccole e testabili per DB, calcoli, adapter, import, API, UI e deploy.
 5. Fondazioni: repo, Compose, schema/migrazioni, autenticazione e test.
 6. Registro e calcoli: import staging, CRUD, posizioni, P&L e performance.
@@ -284,7 +284,7 @@ Prima distribuzione singolo utente, privata e non pubblica per default. Hosting 
 - EOD giornaliero sufficiente per la prima versione.
 - Nessun saldo cassa; flussi derivati solo per rendimento.
 - Costo medio ponderato per ticker/account iniziale, coerente col registro.
-- DB fonte unica; Google Sheets per import, controllo e archivio/export.
+- DB fonte unica; file storici solo per import, controllo e archivio/export.
 - FastAPI, PostgreSQL, React e Docker Compose sono la base tecnica proposta.
 - Tema dark professionale; UI kit, chart library e template scelti dopo design.
 

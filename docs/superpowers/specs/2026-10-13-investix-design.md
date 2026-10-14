@@ -6,7 +6,7 @@
 
 ## Obiettivo
 
-Realizzare un'applicazione privata, autogestita e riproducibile in Docker per gestire il portafoglio personale. Il database Investix è la fonte autorevole; STOCKS-26 serve esclusivamente per import iniziale e riconciliazione in sola lettura.
+Realizzare un'applicazione privata, autogestita e riproducibile in Docker per gestire il portafoglio personale. Il database Investix è la fonte autorevole; gli export storici servono esclusivamente per import iniziale e riconciliazione in sola lettura.
 
 ## Architettura
 
@@ -54,7 +54,7 @@ Per un nuovo titolo, l'utente definisce/conferma ticker, borsa, valuta e unità;
 
 ## Import STOCKS-26 e riconciliazione
 
-L'import è one-shot e non introduce sincronizzazione futura con Google Sheets.
+L'import è one-shot e non introduce sincronizzazione futura con fonti esterne.
 
 1. Verifica live in sola lettura di ID, titolo, fogli e schema.
 2. Acquisizione grezza di `MOVIMENTI` con numero riga, timestamp e hash.
@@ -74,7 +74,7 @@ La verifica del 13 ottobre 2026 conferma il workbook `STOCKS-26`, ID `1Cqpe6uYLJ
 
 ## Fuori ambito della v1
 
-Nessuna integrazione broker/banca, gestione di cassa, trading, multiutenza, esposizione pubblica, streaming/intraday, consulenza finanziaria o sincronizzazione bidirezionale con Google Sheets.
+Nessuna integrazione broker/banca, gestione di cassa, trading, multiutenza, esposizione pubblica, streaming/intraday, consulenza finanziaria o sincronizzazione bidirezionale con fonti esterne.
 
 Il refresh più frequente resta un'estensione futura, prevista nei confini dell'architettura ma non pianificata come requisito funzionale della prima versione.
 

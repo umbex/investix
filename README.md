@@ -30,7 +30,7 @@ Market data is informational only. Investix does not guarantee that prices are c
 - backend/: FastAPI API, SQLAlchemy models, ledger domain, imports, provider adapters, and worker.
 - data/: local import/reference material; it is not a runtime dependency for normal reads.
 - docs/operations.md: backup, restore, deployment, and operational guidance.
-- PRD.md and GOOGLE_SHEET_REFERENCE.md: product and source-data context.
+- PRD.md: product and source-data context.
 
 The browser never receives the Twelve Data API key. Historical observations and KPI calculations use data persisted by the API/worker; live quotes are fetched server-side and are not written to the historical observations table.
 

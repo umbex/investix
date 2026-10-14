@@ -1,1 +1,1 @@
-"""One-shot, file-based importers. They never call Google Sheets at runtime."""
+"""One-shot, file-based importers with no external spreadsheet runtime dependency."""
