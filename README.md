@@ -153,4 +153,6 @@ Historical backfill for newly added instruments is also future work. When an ope
 
 ## License and disclaimer
 
-This repository is intended for private/personal use. No investment advice is provided. Market data can be delayed, incomplete, or wrong; verify important values independently before making financial decisions.
+The original Investix source code is released under the [MIT License](LICENSE).
+
+Investix is intended for personal/self-hosted use. No investment advice is provided. Market data can be delayed, incomplete, or wrong; verify important values independently before making financial decisions.
