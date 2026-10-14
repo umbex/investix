@@ -10,6 +10,7 @@ const amount = (value: string | null | undefined) => value == null ? "N/D" : eur
 export function App() {
   const [authenticated, setAuthenticated] = useState(false);
   const [page, setPage] = useState<"dashboard" | "operations">("dashboard");
+  useEffect(() => { void api.authMode().then(({ bypass }) => { if (bypass) setAuthenticated(true); }).catch(() => undefined); }, []);
   if (!authenticated) return <MantineProvider defaultColorScheme="dark"><Login onAuthenticated={() => setAuthenticated(true)} /></MantineProvider>;
   return <MantineProvider defaultColorScheme="dark"><AppShell header={{ height: 64 }} padding="md" className="investix-shell">
     <AppShell.Header px="md" py="sm" className="topbar"><Group justify="space-between"><Group gap="xs"><Title order={1} size="h3">Investix</Title><Badge color="cyan" variant="light">Privato</Badge></Group><Group gap="xs"><Button variant={page === "dashboard" ? "light" : "subtle"} size="xs" onClick={() => setPage("dashboard")}>Panoramica</Button><Button variant={page === "operations" ? "light" : "subtle"} size="xs" onClick={() => setPage("operations")}>Registro</Button></Group></Group></AppShell.Header>

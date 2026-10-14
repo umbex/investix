@@ -82,6 +82,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export const api = {
+  authMode: () => request<{ bypass: boolean }>("/auth/mode"),
   login: (username: string, password: string) => request<void>("/auth/login", {
     method: "POST",
     headers: { "Content-Type": "application/json" },

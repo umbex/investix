@@ -26,6 +26,7 @@ describe("App", () => {
 
   it("shows imported positions after private login", async () => {
     const fetchMock = vi.fn()
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ bypass: false }) })
       .mockResolvedValueOnce({ ok: true, status: 204 })
       .mockResolvedValueOnce({
         ok: true,
@@ -52,7 +53,8 @@ describe("App", () => {
 
     await waitFor(() => expect(screen.getByRole("heading", { name: "Panoramica" })).toBeInTheDocument());
     expect((await screen.findAllByText("VWCE")).length).toBeGreaterThanOrEqual(1);
-    expect(fetchMock.mock.calls[0][0]).toBe("/api/auth/login");
-    expect(fetchMock.mock.calls[1][0]).toBe("/api/portfolio");
+    expect(fetchMock.mock.calls[0][0]).toBe("/api/auth/mode");
+    expect(fetchMock.mock.calls[1][0]).toBe("/api/auth/login");
+    expect(fetchMock.mock.calls[2][0]).toBe("/api/portfolio");
   });
 });
