@@ -5,7 +5,7 @@ import { api, type Operation, type PerformanceSummary, type PortfolioSummary, ty
 import "./styles.css";
 
 const euro = new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR", minimumFractionDigits: 2, maximumFractionDigits: 2, useGrouping: true });
-const kpiEuro = new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR", minimumFractionDigits: 0, maximumFractionDigits: 0, useGrouping: true });
+const kpiEuro = new Intl.NumberFormat("it-IT", { minimumFractionDigits: 2, maximumFractionDigits: 2, useGrouping: true });
 const quantityFormat = new Intl.NumberFormat("it-IT", { maximumFractionDigits: 6 });
 const numericValue = (value: string | number) => {
   const normalized = String(value).trim();
@@ -16,7 +16,7 @@ const parseNumericInput = (value: FormDataEntryValue | null) => {
   return normalized.includes(",") ? normalized.replace(/\./g, "").replace(",", ".") : normalized;
 };
 const amount = (value: string | null | undefined) => value == null ? "N/D" : euro.format(numericValue(value));
-const kpiAmount = (value: string | null | undefined) => value == null ? "N/D" : kpiEuro.format(numericValue(value));
+const kpiAmount = (value: string | null | undefined) => value == null ? "N/D" : `${kpiEuro.format(numericValue(value) / 1000)}K€`;
 const percent = (value: string | null | undefined) => value == null ? "N/D" : new Intl.NumberFormat("it-IT", { style: "percent", maximumFractionDigits: 1 }).format(Number(value));
 const chartText = "#b8c2d0";
 

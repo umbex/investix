@@ -61,7 +61,7 @@ describe("App", () => {
     const stateHeading = screen.getByRole("heading", { name: "Stato dati" });
     const twrLabel = screen.getByText("Rendimento TWR");
     expect(quotesHeading).toBeInTheDocument();
-    expect(screen.getByText(/1\.235/)).toBeInTheDocument();
+    expect(screen.getByText(/1,23K€/)).toBeInTheDocument();
     expect(twrLabel.compareDocumentPosition(quotesHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(quotesHeading.compareDocumentPosition(positionsHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(positionsHeading.compareDocumentPosition(valueHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
