@@ -45,7 +45,7 @@ describe("App", () => {
       })
       .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ points: [], total_return: null, methodology: "TWR", benchmarks: [] }) })
       .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ status: "ok" }) })
-      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ days: 90, items: [] }) });
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ days: 90, items: [{ ticker: "VWCE", price_eur: "110", change_percent: "10", observed_at: "2026-10-14T15:00:00Z", provider: "twelve-data", points: [{ observed_at: "2026-10-14T15:00:00Z", price_eur: "110" }] }] }) });
     vi.stubGlobal("fetch", fetchMock);
     render(<App />);
 
@@ -68,6 +68,7 @@ describe("App", () => {
     expect(positionsHeading.compareDocumentPosition(valueHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(benchmarkHeading.compareDocumentPosition(stateHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect((await screen.findAllByText("VWCE")).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText("Today P&L")).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Allocazione" })).not.toBeInTheDocument();
     expect(screen.getAllByLabelText("Ticker")[0]).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Posizioni CSV" })).not.toBeInTheDocument();
