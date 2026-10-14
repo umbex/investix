@@ -7,4 +7,7 @@
 .positive { color: #3ddc97; }
 .chart-card { min-width: 0; }
 .chart { height: 200px; margin: 18px 0 8px; background: linear-gradient(180deg, rgba(34, 211, 238, .12), transparent); border-radius: 8px; overflow: hidden; }
+.market-status-icon { display: inline-grid; place-items: center; width: 1.4rem; height: 1.4rem; border-radius: 50%; font-weight: 800; line-height: 1; cursor: help; }
+.market-status-icon.available { color: #3ddc97; background: rgba(61, 220, 151, .14); }
+.market-status-icon.missing { color: #ff6b6b; background: rgba(255, 107, 107, .14); }
 @media (max-width: 390px) { .dashboard { padding-inline: 0; } .dashboard-title { align-items: flex-start; } .dashboard-title > :last-child { max-width: 150px; text-align: right; } .positions { margin-inline: -4px; } }

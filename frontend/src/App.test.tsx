@@ -53,6 +53,10 @@ describe("App", () => {
 
     await waitFor(() => expect(screen.getByRole("heading", { name: "Panoramica" })).toBeInTheDocument());
     expect((await screen.findAllByText("VWCE")).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByLabelText("Ticker")[0]).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Posizioni CSV" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Performance CSV" })).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Quotazione mancante")).toBeInTheDocument();
     expect(fetchMock.mock.calls[0][0]).toBe("/api/auth/mode");
     expect(fetchMock.mock.calls[1][0]).toBe("/api/auth/login");
     expect(fetchMock.mock.calls[2][0]).toBe("/api/portfolio");
