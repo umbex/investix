@@ -17,5 +17,5 @@
 .market-open-dot.closed { background: #9097a6; box-shadow: 0 0 0 .15rem rgba(144, 151, 166, .14); }
 .quote-sparkline { display: block; width: 120px; height: 28px; color: #22d3ee; }
 .quote-sparkline polyline { stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-@media (max-width: 600px) { .investix-shell { --header-height: 104px; } .topbar-content { align-items: flex-start; flex-wrap: wrap; row-gap: 6px; } .topbar-actions { width: 100%; justify-content: flex-start; } }
+@media (max-width: 600px) { .investix-shell { --header-height: 104px; } .investix-shell .mantine-AppShell-main { padding-top: calc(var(--header-height) + 16px); } .topbar-content { align-items: flex-start; flex-wrap: wrap; row-gap: 6px; } .topbar-actions { width: 100%; justify-content: flex-start; } }
 @media (max-width: 390px) { .dashboard { padding-inline: 0; } .dashboard-title { align-items: flex-start; } .dashboard-title > :last-child { max-width: 150px; text-align: right; } .positions { margin-inline: -4px; } }
