@@ -84,6 +84,7 @@ export function App() {
   return <MantineProvider defaultColorScheme="dark"><AppShell header={{ height: 64 }} padding="md" className="investix-shell">
     <AppShell.Header px="md" py="sm" className="topbar"><Group justify="space-between"><Group gap="xs"><Title order={1} size="h3">Investix</Title><Badge color="cyan" variant="light">v{packageJson.version}</Badge></Group><Group gap="xs"><Button variant={page === "dashboard" ? "light" : "subtle"} size="xs" onClick={() => setPage("dashboard")}>Panoramica</Button><Button variant={page === "operations" ? "light" : "subtle"} size="xs" onClick={() => setPage("operations")}>Registro</Button><Button variant={page === "settings" ? "light" : "subtle"} size="xs" onClick={() => setPage("settings")}>Impostazioni</Button></Group></Group></AppShell.Header>
     <AppShell.Main>{page === "dashboard" ? <Dashboard settings={settings} onOpenRegistry={() => setPage("operations")} /> : page === "operations" ? <Operations /> : <SettingsPage settings={settings} onChange={updateSettings} />}</AppShell.Main>
+    <footer className="app-footer">Made by umbex · © 2026 · Market data is provided as-is; umbex is not responsible for inaccurate, delayed, or incomplete data.</footer>
   </AppShell></MantineProvider>;
 }
 
