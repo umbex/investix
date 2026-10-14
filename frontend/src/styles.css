@@ -6,6 +6,7 @@
 .dashboard { max-width: 1280px; margin: 0 auto; padding-bottom: 32px; }
 .metric { font-size: clamp(1.1rem, 2vw, 1.5rem); font-weight: 700; margin: 4px 0; font-variant-numeric: tabular-nums; }
 .positive { color: #3ddc97; }
+.negative { color: #ff6b6b; }
 .chart-card { min-width: 0; }
 .chart { height: 200px; margin: 18px 0 8px; background: linear-gradient(180deg, rgba(34, 211, 238, .12), transparent); border-radius: 8px; overflow: hidden; }
 .market-status-icon { display: inline-grid; place-items: center; width: 1.4rem; height: 1.4rem; border-radius: 50%; font-weight: 800; line-height: 1; cursor: help; }
