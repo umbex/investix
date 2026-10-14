@@ -151,7 +151,7 @@ function Dashboard({ settings, onOpenRegistry }: { settings: UserSettings; onOpe
     }
     return available ? total : null;
   }, [quotes, liveQuotes, quotePositions]);
-  const todayPnlDisplay = todayPnlTotal == null ? "N/D" : `${todayPnlTotal >= 0 ? "+" : ""}${euro.format(todayPnlTotal)}`;
+  const todayPnlDisplay = todayPnlTotal == null ? "N/D" : `${todayPnlTotal >= 0 ? "+" : ""}${kpiEuro.format(todayPnlTotal / 1000)}K€`;
   const kpiCards = {
     marketValue: <Metric label="Valore portafoglio" value={kpiAmount(summary?.kpis.market_value_eur)} note={summary?.valuation_status === "available" ? "Ultima osservazione persistita" : "Quotazioni mancanti"} />,
     todayPnl: <Metric label="Today P&L" value={todayPnlDisplay} note="Variazione odierna" positive={todayPnlTotal != null && todayPnlTotal >= 0} negative={todayPnlTotal != null && todayPnlTotal < 0} />,
