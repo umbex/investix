@@ -59,6 +59,7 @@ describe("App", () => {
     const valueHeading = screen.getByRole("heading", { name: "Valore nel tempo" });
     const benchmarkHeading = screen.getByRole("heading", { name: "Rendimento vs benchmark" });
     const twrLabel = screen.getByText("Rendimento TWR");
+    expect(screen.queryByText("Quotazioni disponibili")).not.toBeInTheDocument();
     expect(quotesHeading).toBeInTheDocument();
     expect(screen.getByText(/1,23K€/)).toBeInTheDocument();
     expect(screen.getAllByRole("textbox", { name: /Intervallo|Storico quotazioni/ })).toHaveLength(3);
