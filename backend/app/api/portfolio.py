@@ -102,6 +102,16 @@ def _summary(positions: list[dict]) -> dict:
             "ticker": item["ticker"],
             "market_value_eur": item["market_value_eur"],
             "weight": item["market_value_eur"] / market_value if has_all_values and market_value else None,
+            "open_cost_eur": item["open_cost_eur"],
+            "cost_weight": item["open_cost_eur"] / open_cost if open_cost else None,
+            "accounts": [
+                {
+                    "account": account["name"],
+                    "open_cost_eur": account["open_cost_eur"],
+                    "weight": account["open_cost_eur"] / item["open_cost_eur"] if item["open_cost_eur"] else None,
+                }
+                for account in item["accounts"]
+            ],
         }
         for item in positions
     ]

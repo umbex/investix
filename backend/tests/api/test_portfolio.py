@@ -31,7 +31,31 @@ def test_dashboard_summary_exposes_account_breakdown_and_unavailable_valuation(m
     assert position["market_data_status"] == "missing"
     assert position["market_data_provider"] is None
     assert summary["allocations"][0]["weight"] is None
+    assert {item["account"] for item in summary["allocations"][0]["accounts"]} == {"Directa", "Fineco"}
     assert {item["account"] for item in summary["account_allocations"]} == {"Directa", "Fineco"}
+
+
+def test_allocation_accounts_stay_bound_to_each_ticker(monkeypatch) -> None:
+    client = client_with_database(monkeypatch)
+    create_buy(client)
+    response = client.post(
+        "/api/operations",
+        json={
+            "account_name": "Fineco",
+            "ticker": "EQQQ",
+            "kind": "BUY",
+            "quantity": "1",
+            "unit_price_eur": "50",
+            "trade_date": "2026-01-03",
+            "source_order": 2,
+        },
+    )
+    assert response.status_code == 201
+
+    allocations = {item["ticker"]: item for item in client.get("/api/portfolio").json()["allocations"]}
+
+    assert [item["account"] for item in allocations["VWCE"]["accounts"]] == ["Directa"]
+    assert [item["account"] for item in allocations["EQQQ"]["accounts"]] == ["Fineco"]
 
 
 def test_portfolio_csv_uses_same_filtered_positions(monkeypatch) -> None:
