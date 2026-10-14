@@ -4,9 +4,13 @@ import { FormEvent, useEffect, useRef, useState } from "react";
 import { api, type Operation, type PerformanceSummary, type PortfolioSummary } from "./api";
 import "./styles.css";
 
-const euro = new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR", maximumFractionDigits: 2 });
+const euro = new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR", minimumFractionDigits: 2, maximumFractionDigits: 2, useGrouping: true });
 const quantityFormat = new Intl.NumberFormat("it-IT", { maximumFractionDigits: 6 });
-const amount = (value: string | null | undefined) => value == null ? "N/D" : euro.format(Number(value));
+const numericValue = (value: string | number) => {
+  const normalized = String(value).trim();
+  return Number(normalized.includes(",") ? normalized.replace(/\./g, "").replace(",", ".") : normalized);
+};
+const amount = (value: string | null | undefined) => value == null ? "N/D" : euro.format(numericValue(value));
 export const parseNumericInput = (value: FormDataEntryValue | null) => {
   const normalized = String(value ?? "").trim();
   return normalized.includes(",") ? normalized.replace(/\./g, "").replace(",", ".") : normalized;

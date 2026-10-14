@@ -38,11 +38,11 @@ describe("App", () => {
         status: 200,
         json: async () => ({
           valuation_status: "unavailable_without_observation",
-          kpis: { open_cost_eur: "200", market_value_eur: null, realized_pnl_eur: "0", unrealized_pnl_eur: null },
+          kpis: { open_cost_eur: "3990.00", market_value_eur: null, realized_pnl_eur: "0", unrealized_pnl_eur: null },
           positions: [{
-            ticker: "VWCE", quantity: "2", open_cost_eur: "200", average_cost_eur: "100", realized_pnl_eur: "0",
+            ticker: "VWCE", quantity: "2", open_cost_eur: "3990.00", average_cost_eur: "1995", realized_pnl_eur: "0",
             market_value_eur: null, unrealized_pnl_eur: null, market_data_status: "missing",
-            accounts: [{ name: "Directa", quantity: "2", open_cost_eur: "200", realized_pnl_eur: "0" }],
+            accounts: [{ name: "Directa", quantity: "2", open_cost_eur: "3990.00", realized_pnl_eur: "0" }],
           }],
         }),
       })
@@ -56,6 +56,7 @@ describe("App", () => {
 
     await waitFor(() => expect(screen.getByRole("heading", { name: "Panoramica" })).toBeInTheDocument());
     expect(await screen.findByText("VWCE")).toBeInTheDocument();
+    expect(screen.getAllByText(/3\.990,00/).length).toBeGreaterThanOrEqual(2);
     expect(fetchMock.mock.calls[0][0]).toBe("/api/auth/login");
     expect(fetchMock.mock.calls[1][0]).toBe("/api/portfolio");
   });
