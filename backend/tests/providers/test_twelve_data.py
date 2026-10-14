@@ -24,6 +24,18 @@ def test_twelve_data_normalizes_latest_eod_quote_and_preserves_source_metadata()
     assert canonical.ticker == "EQQQ"
 
 
+def test_twelve_data_passes_exchange_for_ambiguous_listings() -> None:
+    urls: list[str] = []
+    adapter = TwelveDataAdapter(
+        api_key="test-key",
+        download=lambda url: urls.append(url) or '{"meta":{"symbol":"EQQQ","exchange":"MTA","currency":"EUR"},"values":[{"datetime":"2026-10-14","close":"123.45"}]}',
+    )
+
+    adapter.fetch_latest("EQQQ", ticker="EQQQ", exchange="MTA")
+
+    assert "exchange=MTA" in urls[0]
+
+
 def test_twelve_data_reports_unknown_symbols_and_rate_limits() -> None:
     unknown = TwelveDataAdapter(api_key="test-key", download=lambda _: '{"code":400,"message":"Invalid symbol"}')
     limited = TwelveDataAdapter(api_key="test-key", download=lambda _: '{"code":429,"message":"API credits exhausted"}')

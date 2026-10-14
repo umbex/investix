@@ -21,8 +21,8 @@ class TwelveDataAdapter:
         self._fx_to_eur = fx_to_eur
         self._download = download or _download
 
-    def fetch_latest(self, symbol: str, *, ticker: str | None = None) -> MarketObservation:
-        query = urlencode({"symbol": symbol, "interval": "1day", "outputsize": 1, "apikey": self.api_key})
+    def fetch_latest(self, symbol: str, *, ticker: str | None = None, exchange: str | None = None) -> MarketObservation:
+        query = urlencode({"symbol": symbol, "interval": "1day", "outputsize": 1, "apikey": self.api_key, **({"exchange": exchange} if exchange else {})})
         try:
             payload = json.loads(self._download(f"https://api.twelvedata.com/time_series?{query}"))
         except (OSError, json.JSONDecodeError) as error:
@@ -105,8 +105,8 @@ class TwelveDataAdapter:
             if item.get("symbol")
         ]
 
-    def fetch_history(self, symbol: str, *, ticker: str | None = None, start_date: date, end_date: date) -> Iterable[MarketObservation]:
-        query = urlencode({"symbol": symbol, "interval": "1day", "start_date": start_date.isoformat(), "end_date": end_date.isoformat(), "outputsize": 5000, "apikey": self.api_key})
+    def fetch_history(self, symbol: str, *, ticker: str | None = None, start_date: date, end_date: date, exchange: str | None = None) -> Iterable[MarketObservation]:
+        query = urlencode({"symbol": symbol, "interval": "1day", "start_date": start_date.isoformat(), "end_date": end_date.isoformat(), "outputsize": 5000, "apikey": self.api_key, **({"exchange": exchange} if exchange else {})})
         try:
             payload = json.loads(self._download(f"https://api.twelvedata.com/time_series?{query}"))
             if "code" in payload:

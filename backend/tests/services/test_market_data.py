@@ -70,7 +70,7 @@ def test_refreshes_quoted_instruments_and_reports_per_symbol_failures() -> None:
     with Session(engine) as session:
         session.add_all([Instrument(ticker="EQQQ", quote_symbol="EQQQ.MI"), Instrument(ticker="MISSING", quote_symbol="MISSING")])
         session.commit()
-        result = refresh_instruments(session, lambda symbol, ticker: observation() if ticker == "EQQQ" else (_ for _ in ()).throw(ProviderError("simbolo")))
+        result = refresh_instruments(session, lambda symbol, ticker, venue: observation() if ticker == "EQQQ" else (_ for _ in ()).throw(ProviderError("simbolo")))
 
     assert result == {"refreshed": ["EQQQ"], "failed": {"MISSING": "simbolo"}}
 
@@ -93,7 +93,7 @@ def test_backfill_starts_at_first_operation_and_persists_only_provider_points() 
         session.commit()
         calls: list[tuple[str, str, date, date]] = []
 
-        def fetch(symbol, ticker, start, end):
+        def fetch(symbol, ticker, start, end, venue):
             calls.append((symbol, ticker, start, end))
             return [observation()]
 

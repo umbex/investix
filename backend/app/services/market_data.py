@@ -66,7 +66,7 @@ def persist_observation(session: Session, market_observation: MarketObservation)
 
 def refresh_instruments(
     session: Session,
-    fetch: Callable[[str, str], MarketObservation],
+    fetch: Callable[[str, str, str | None], MarketObservation],
 ) -> dict[str, list[str] | dict[str, str]]:
     """Refresh every configured quote symbol without turning one provider error into data loss."""
     refreshed: list[str] = []
@@ -74,7 +74,7 @@ def refresh_instruments(
     instruments = list(session.scalars(select(Instrument).where(Instrument.quote_symbol.is_not(None)).order_by(Instrument.ticker)))
     for instrument in instruments:
         try:
-            persist_observation(session, fetch(instrument.quote_symbol, instrument.ticker))
+            persist_observation(session, fetch(instrument.quote_symbol, instrument.ticker, instrument.quote_venue))
             refreshed.append(instrument.ticker)
         except ProviderError as error:
             session.rollback()
@@ -85,7 +85,7 @@ def refresh_instruments(
 def backfill_instrument(
     session: Session,
     instrument: Instrument,
-    fetch_history: Callable[[str, str, date, date], Iterable[MarketObservation]],
+    fetch_history: Callable[[str, str, date, date, str | None], Iterable[MarketObservation]],
     *,
     end_date: date | None = None,
 ) -> dict[str, str | int]:
@@ -99,7 +99,7 @@ def backfill_instrument(
     if end < start_date:
         return {"ticker": instrument.ticker, "status": "empty_range", "observations": 0}
     observations = 0
-    for market_observation in fetch_history(instrument.quote_symbol, instrument.ticker, start_date, end):
+    for market_observation in fetch_history(instrument.quote_symbol, instrument.ticker, start_date, end, instrument.quote_venue):
         persist_observation(session, market_observation)
         observations += 1
     return {"ticker": instrument.ticker, "status": "backfilled", "observations": observations}

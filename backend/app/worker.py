@@ -64,7 +64,7 @@ def refresh_once(settings: Settings, *, session_factory: Callable[[], object]) -
     if provider is None:
         return {"refreshed": [], "failed": {}}
     with session_factory() as session:  # type: ignore[union-attr]
-        return refresh_instruments(session, lambda symbol, ticker: provider.fetch_latest(symbol, ticker=ticker))
+        return refresh_instruments(session, lambda symbol, ticker, venue: provider.fetch_latest(symbol, ticker=ticker, exchange=venue))
 
 
 def run_scheduled_once(
