@@ -20,6 +20,9 @@ const kpiAmount = (value: string | null | undefined) => value == null ? "N/D" : 
 const percent = (value: string | null | undefined) => value == null ? "N/D" : new Intl.NumberFormat("it-IT", { style: "percent", maximumFractionDigits: 1 }).format(Number(value));
 const chartText = "#b8c2d0";
 const RANGE_OPTIONS = ["1W", "1M", "3M", "6M", "YTD", "1Y", "2Y", "Tutto"];
+// Future option: keep the date-filter implementation available without exposing
+// a redundant control in Panoramica while chart range selectors remain active.
+const SHOW_OVERVIEW_DATE_FILTER = false;
 const rangeDays = (range: string) => {
   if (range === "1W") return 7;
   if (range === "1M") return 30;
@@ -56,6 +59,7 @@ function Login({ onAuthenticated }: { onAuthenticated: () => void }) {
 
 function Dashboard({ onOpenRegistry }: { onOpenRegistry: () => void }) {
   const [summary, setSummary] = useState<PortfolioSummary>();
+  const [quotePositions, setQuotePositions] = useState<PortfolioSummary["positions"]>([]);
   const [performance, setPerformance] = useState<PerformanceSummary>();
   const [workerHealth, setWorkerHealth] = useState<WorkerHealth>({ status: "unknown" });
   const [quotes, setQuotes] = useState<QuotesSummary>();
@@ -67,13 +71,13 @@ function Dashboard({ onOpenRegistry }: { onOpenRegistry: () => void }) {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [error, setError] = useState("");
-  const load = async (filter = ticker) => { setError(""); try { const nextSummary = await api.portfolio(filter || undefined, account || undefined); try { setPerformance(await api.performance(filter || undefined, dateFrom || undefined, dateTo || undefined)); } catch { setPerformance(undefined); } try { setWorkerHealth(await api.workerHealth()); } catch { setWorkerHealth({ status: "unknown" }); } try { setQuotes(await api.quotes(rangeDays(quoteRange))); } catch { setQuotes(undefined); } setSummary(nextSummary); } catch (reason) { setError(reason instanceof Error ? reason.message : "Dati non disponibili"); } };
+  const load = async (filter = ticker) => { setError(""); try { const nextSummary = await api.portfolio(filter || undefined, account || undefined); let nextQuotePositions = nextSummary.positions; if (filter) { try { nextQuotePositions = (await api.portfolio(undefined, account || undefined)).positions; } catch { /* keep filtered positions if the unfiltered lookup fails */ } } try { setPerformance(await api.performance(filter || undefined, dateFrom || undefined, dateTo || undefined)); } catch { setPerformance(undefined); } try { setWorkerHealth(await api.workerHealth()); } catch { setWorkerHealth({ status: "unknown" }); } try { setQuotes(await api.quotes(rangeDays(quoteRange))); } catch { setQuotes(undefined); } setSummary(nextSummary); setQuotePositions(nextQuotePositions); } catch (reason) { setError(reason instanceof Error ? reason.message : "Dati non disponibili"); } };
   useEffect(() => { void load(""); }, []);
   const changeQuoteRange = (value: string | null) => { const nextRange = value || "3M"; setQuoteRange(nextRange); void api.quotes(rangeDays(nextRange)).then(setQuotes).catch(() => setQuotes(undefined)); };
   const positions = summary?.positions ?? [];
   const liveSessionId = useRef(`tab-${Math.random().toString(36).slice(2)}`);
   useEffect(() => {
-    const symbols = positions.filter((position) => marketStatus(position.market_data_venue).open).map((position) => position.ticker);
+    const symbols = quotePositions.filter((position) => marketStatus(position.market_data_venue).open).map((position) => position.ticker);
     if (!symbols.length) return;
     let disposed = false;
     const refresh = () => {
@@ -85,13 +89,13 @@ function Dashboard({ onOpenRegistry }: { onOpenRegistry: () => void }) {
     const onVisibility = () => { if (document.visibilityState === "visible") refresh(); };
     document.addEventListener("visibilitychange", onVisibility);
     return () => { disposed = true; window.clearInterval(timer); document.removeEventListener("visibilitychange", onVisibility); };
-  }, [positions.map((position) => position.ticker).join(",")]);
+  }, [quotePositions.map((position) => position.ticker).join(",")]);
   return <Stack gap="lg" className="dashboard">
     <Group justify="space-between" align="end" className="dashboard-title"><div><Text c="dimmed">Portafoglio privato</Text><Title order={2}>Panoramica</Title></div><Badge color={summary?.valuation_status === "available" ? "teal" : "yellow"}>{summary?.valuation_status === "available" ? "Quotazioni disponibili" : "Quotazioni mancanti"}</Badge></Group>
-    <Group className="filter-bar" align="end"><Select label="Ticker" placeholder="Tutti" clearable value={ticker || null} onChange={(value) => setTicker(value || "")} data={positions.map((position) => position.ticker)} /><Select label="Account" placeholder="Tutti" clearable value={account || null} onChange={(value) => setAccount(value || "")} data={Array.from(new Set(positions.flatMap((position) => position.accounts.map((item) => item.name)))).sort()} /><TextInput label="Da" type="date" value={dateFrom} onChange={(event) => setDateFrom(event.currentTarget.value)} /><TextInput label="A" type="date" value={dateTo} onChange={(event) => setDateTo(event.currentTarget.value)} /><Button onClick={() => void load()}>Applica</Button><Button variant="subtle" onClick={() => { setTicker(""); setAccount(""); setDateFrom(""); setDateTo(""); void load(""); }}>Azzera</Button></Group>
+    <Group className="filter-bar" align="end"><Select label="Ticker" placeholder="Tutti" clearable value={ticker || null} onChange={(value) => setTicker(value || "")} data={positions.map((position) => position.ticker)} /><Select label="Account" placeholder="Tutti" clearable value={account || null} onChange={(value) => setAccount(value || "")} data={Array.from(new Set(positions.flatMap((position) => position.accounts.map((item) => item.name)))).sort()} />{SHOW_OVERVIEW_DATE_FILTER && <><TextInput label="Da" type="date" value={dateFrom} onChange={(event) => setDateFrom(event.currentTarget.value)} /><TextInput label="A" type="date" value={dateTo} onChange={(event) => setDateTo(event.currentTarget.value)} /></>}<Button onClick={() => void load()}>Applica</Button><Button variant="subtle" onClick={() => { setTicker(""); setAccount(""); setDateFrom(""); setDateTo(""); void load(""); }}>Azzera</Button></Group>
     {error && <Card withBorder><Text c="red">{error}</Text><Button mt="sm" size="xs" onClick={() => void load()}>Riprova</Button></Card>}
     {!summary && !error ? <Group justify="center" py="xl"><Loader aria-label="Caricamento portafoglio" /></Group> : <><SimpleGrid cols={{ base: 1, xs: 2, md: 5 }} spacing="md"><Metric label="Valore portafoglio" value={kpiAmount(summary?.kpis.market_value_eur)} note={summary?.valuation_status === "available" ? "Ultima osservazione persistita" : "Quotazioni mancanti"} /><Metric label="Capitale aperto" value={kpiAmount(summary?.kpis.open_cost_eur)} note="Costo ricostruito dal ledger" /><Metric label="P&L realizzato" value={kpiAmount(summary?.kpis.realized_pnl_eur)} note="Vendite registrate" positive={Number(summary?.kpis.realized_pnl_eur) > 0} /><Metric label="P&L non realizzato" value={kpiAmount(summary?.kpis.unrealized_pnl_eur)} note="Disponibile con quotazioni EOD" positive={Number(summary?.kpis.unrealized_pnl_eur) > 0} /><Metric label="Rendimento TWR" value={performance?.total_return == null ? "N/D" : new Intl.NumberFormat("it-IT", { style: "percent", maximumFractionDigits: 2 }).format(Number(performance.total_return))} note="Rendimento ponderato nel tempo" positive={Number(performance?.total_return) > 0} /></SimpleGrid>
-      <Card withBorder radius="md"><Group justify="space-between" align="center"><Title order={3}>Quotazioni</Title><Select aria-label="Storico quotazioni" size="xs" value={quoteRange} onChange={changeQuoteRange} data={RANGE_OPTIONS} /></Group><QuotesTable quotes={quotes} liveQuotes={liveQuotes} positions={positions} /></Card>
+      <Card withBorder radius="md"><Group justify="space-between" align="center"><Title order={3}>Quotazioni</Title><Select aria-label="Storico quotazioni" size="xs" value={quoteRange} onChange={changeQuoteRange} data={RANGE_OPTIONS} /></Group><QuotesTable quotes={quotes} liveQuotes={liveQuotes} positions={quotePositions} /></Card>
       <Card withBorder radius="md" className="positions"><Group justify="space-between"><Title order={3}>Posizioni</Title><Button variant="subtle" size="xs" onClick={onOpenRegistry}>Registro operazioni</Button></Group><PositionTable positions={positions} totalOpenCost={summary!.kpis.open_cost_eur} totalMarketValue={summary!.kpis.market_value_eur} /></Card>
       <Card withBorder radius="md" className="chart-card"><Group justify="space-between"><Title order={3}>Valore nel tempo</Title><Group gap="xs"><Select aria-label="Intervallo grafico" size="xs" value={range} onChange={(value) => setRange(value || "Tutto")} data={RANGE_OPTIONS} /><Badge variant="outline">EUR</Badge></Group></Group><PortfolioChart performance={performance} range={range} /><Text size="xs" c="dimmed">{performance?.methodology || "Serie non disponibile: servono osservazioni storiche valide."}</Text></Card>
       <Card withBorder radius="md" className="chart-card"><Group justify="space-between"><Title order={3}>Rendimento vs benchmark</Title><Group gap="xs"><Select aria-label="Intervallo benchmark" size="xs" value={range} onChange={(value) => setRange(value || "Tutto")} data={RANGE_OPTIONS} /><Badge variant="outline">Base comune 0%</Badge></Group></Group><BenchmarkChart performance={performance} range={range} /><Text size="xs" c="dimmed">I benchmark price-return escludono i dividendi: la comparabilità è indicata nella legenda.</Text></Card>
