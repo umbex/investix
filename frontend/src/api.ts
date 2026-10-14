@@ -109,6 +109,16 @@ export const api = {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   }),
+  reviseOperation: (id: number, payload: Record<string, unknown>) => request<Operation>(`/operations/${id}/revise`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  }),
+  cancelOperation: (id: number, reason: string) => request<void>(`/operations/${id}/cancel`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ reason }),
+  }),
   exportUrl: (ticker?: string, account?: string) => {
     const params = new URLSearchParams();
     if (ticker) params.set("ticker", ticker);

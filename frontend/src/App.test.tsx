@@ -57,4 +57,21 @@ describe("App", () => {
     expect(fetchMock.mock.calls[1][0]).toBe("/api/auth/login");
     expect(fetchMock.mock.calls[2][0]).toBe("/api/portfolio");
   });
+
+  it("shows correction and cancellation actions in the register", async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ bypass: true }) })
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ valuation_status: "unavailable_without_observation", kpis: { open_cost_eur: "100", market_value_eur: null, realized_pnl_eur: "0", unrealized_pnl_eur: null }, positions: [], allocations: [], account_allocations: [] }) })
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ points: [], total_return: null, methodology: "TWR", benchmarks: [] }) })
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ status: "ok" }) })
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ total: 1, items: [{ id: 7, account_name: "Directa", ticker: "VWCE", kind: "BUY", quantity: "1", unit_price_eur: "100", trade_date: "2026-01-02", source_order: 1, fee_eur: null, dividend_eur: null, original_unit_price: null, original_currency: null, settlement_date: null, note: null, is_approximate: false }] }) });
+    vi.stubGlobal("fetch", fetchMock);
+    render(<App />);
+
+    await waitFor(() => expect(screen.getByRole("heading", { name: "Panoramica" })).toBeInTheDocument());
+    fireEvent.click(screen.getByRole("button", { name: "Registro" }));
+
+    expect(await screen.findByRole("button", { name: "Modifica" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Annulla" })).toBeInTheDocument();
+  });
 });
