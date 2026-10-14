@@ -42,6 +42,18 @@ export type WorkerHealth = {
   detail?: string;
 };
 
+export type QuotesSummary = {
+  days: number;
+  items: {
+    ticker: string;
+    price_eur: string;
+    change_percent: string | null;
+    observed_at: string;
+    provider: string;
+    points: { observed_at: string; price_eur: string }[];
+  }[];
+};
+
 export type PerformanceSummary = {
   points: { date: string; value_eur: string; external_flow_eur: string; cumulative_return: string | null }[];
   total_return: string | null;
@@ -135,4 +147,5 @@ export const api = {
     return apiUrl("/performance/export.csv" + (query ? `?${query}` : ""));
   },
   workerHealth: () => request<WorkerHealth>("/health/worker"),
+  quotes: (days: number) => request<QuotesSummary>(`/quotes?days=${days}`),
 };

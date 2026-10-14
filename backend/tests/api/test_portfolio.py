@@ -1,6 +1,34 @@
+from datetime import datetime, timezone
 from decimal import Decimal
 
+from sqlalchemy import select
+
+from app.models import Instrument, Observation
 from tests.api.test_operations import client_with_database, create_buy
+
+
+def test_quotes_returns_latest_change_and_range_filtered_history(monkeypatch) -> None:
+    client = client_with_database(monkeypatch)
+    create_buy(client)
+    sessions = client.app.state.session_factory
+    with sessions() as session:
+        instrument = session.scalar(select(Instrument).where(Instrument.ticker == "VWCE"))
+        assert instrument is not None
+        session.add_all([
+            Observation(instrument_id=instrument.id, provider="test", price=Decimal("100"), raw_price=Decimal("100"), observed_at=datetime(2026, 1, 1, tzinfo=timezone.utc)),
+            Observation(instrument_id=instrument.id, provider="test", price=Decimal("105"), raw_price=Decimal("105"), observed_at=datetime(2026, 1, 2, tzinfo=timezone.utc)),
+            Observation(instrument_id=instrument.id, provider="test", price=Decimal("110"), raw_price=Decimal("110"), observed_at=datetime(2026, 5, 1, tzinfo=timezone.utc)),
+        ])
+        session.commit()
+
+    response = client.get("/api/quotes?days=119")
+
+    assert response.status_code == 200
+    item = response.json()["items"][0]
+    assert item["ticker"] == "VWCE"
+    assert Decimal(item["price_eur"]) == Decimal("110")
+    assert Decimal(item["change_percent"]) == Decimal("4.7619047619")
+    assert [point["price_eur"] for point in item["points"]] == ["105.0000000000", "110.0000000000"]
 
 
 def test_dashboard_summary_exposes_account_breakdown_and_unavailable_valuation(monkeypatch) -> None:

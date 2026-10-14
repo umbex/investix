@@ -43,7 +43,9 @@ describe("App", () => {
           account_allocations: [{ account: "Directa", open_cost_eur: "200", weight: "1" }],
         }),
       })
-      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ points: [], total_return: null, methodology: "TWR", benchmarks: [] }) });
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ points: [], total_return: null, methodology: "TWR", benchmarks: [] }) })
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ status: "ok" }) })
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ days: 90, items: [] }) });
     vi.stubGlobal("fetch", fetchMock);
     render(<App />);
 
@@ -52,6 +54,7 @@ describe("App", () => {
     fireEvent.click(screen.getByRole("button", { name: "Accedi" }));
 
     await waitFor(() => expect(screen.getByRole("heading", { name: "Panoramica" })).toBeInTheDocument());
+    expect(screen.getByRole("heading", { name: "Quotazioni" })).toBeInTheDocument();
     expect((await screen.findAllByText("VWCE")).length).toBeGreaterThanOrEqual(1);
     expect(screen.queryByRole("heading", { name: "Allocazione" })).not.toBeInTheDocument();
     expect(screen.getAllByLabelText("Ticker")[0]).toBeInTheDocument();
@@ -69,6 +72,7 @@ describe("App", () => {
       .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ valuation_status: "unavailable_without_observation", kpis: { open_cost_eur: "100", market_value_eur: null, realized_pnl_eur: "0", unrealized_pnl_eur: null }, positions: [], allocations: [], account_allocations: [] }) })
       .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ points: [], total_return: null, methodology: "TWR", benchmarks: [] }) })
       .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ status: "ok" }) })
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ days: 90, items: [] }) })
       .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ total: 1, items: [{ id: 7, account_name: "Directa", ticker: "VWCE", kind: "BUY", quantity: "1", unit_price_eur: "100", trade_date: "2026-01-02", source_order: 1, fee_eur: null, dividend_eur: null, original_unit_price: null, original_currency: null, settlement_date: null, note: null, is_approximate: false }] }) });
     vi.stubGlobal("fetch", fetchMock);
     render(<App />);

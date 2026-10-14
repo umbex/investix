@@ -11,6 +11,7 @@ from app.api.imports import router as imports_router
 from app.api.operations import router as operations_router
 from app.api.portfolio import router as portfolio_router
 from app.api.performance import router as performance_router
+from app.api.quotes import router as quotes_router
 from app.auth import require_session
 from app.settings import get_settings
 
@@ -26,6 +27,7 @@ def create_app() -> FastAPI:
     application.include_router(operations_router)
     application.include_router(portfolio_router)
     application.include_router(performance_router)
+    application.include_router(quotes_router)
 
     @application.get("/api/health")
     def health() -> dict[str, str]:

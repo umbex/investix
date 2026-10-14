@@ -1,7 +1,7 @@
 import { AppShell, Badge, Button, Card, Group, Loader, MantineProvider, Modal, NumberInput, Select, SimpleGrid, Stack, Table, Text, TextInput, Title, Tooltip } from "@mantine/core";
 import { FormEvent, useEffect, useRef, useState } from "react";
 
-import { api, type Operation, type PerformanceSummary, type PortfolioSummary, type WorkerHealth } from "./api";
+import { api, type Operation, type PerformanceSummary, type PortfolioSummary, type QuotesSummary, type WorkerHealth } from "./api";
 import "./styles.css";
 
 const euro = new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR", minimumFractionDigits: 2, maximumFractionDigits: 2, useGrouping: true });
@@ -42,14 +42,17 @@ function Dashboard({ onOpenRegistry }: { onOpenRegistry: () => void }) {
   const [summary, setSummary] = useState<PortfolioSummary>();
   const [performance, setPerformance] = useState<PerformanceSummary>();
   const [workerHealth, setWorkerHealth] = useState<WorkerHealth>({ status: "unknown" });
+  const [quotes, setQuotes] = useState<QuotesSummary>();
+  const [quoteRange, setQuoteRange] = useState("90");
   const [range, setRange] = useState("Tutto");
   const [ticker, setTicker] = useState("");
   const [account, setAccount] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [error, setError] = useState("");
-  const load = async (filter = ticker) => { setError(""); try { setSummary(await api.portfolio(filter || undefined, account || undefined)); try { setPerformance(await api.performance(filter || undefined, dateFrom || undefined, dateTo || undefined)); } catch { setPerformance(undefined); } try { setWorkerHealth(await api.workerHealth()); } catch { setWorkerHealth({ status: "unknown" }); } } catch (reason) { setError(reason instanceof Error ? reason.message : "Dati non disponibili"); } };
+  const load = async (filter = ticker) => { setError(""); try { const nextSummary = await api.portfolio(filter || undefined, account || undefined); try { setPerformance(await api.performance(filter || undefined, dateFrom || undefined, dateTo || undefined)); } catch { setPerformance(undefined); } try { setWorkerHealth(await api.workerHealth()); } catch { setWorkerHealth({ status: "unknown" }); } try { setQuotes(await api.quotes(Number(quoteRange))); } catch { setQuotes(undefined); } setSummary(nextSummary); } catch (reason) { setError(reason instanceof Error ? reason.message : "Dati non disponibili"); } };
   useEffect(() => { void load(""); }, []);
+  const changeQuoteRange = (value: string | null) => { const nextRange = value || "90"; setQuoteRange(nextRange); void api.quotes(Number(nextRange)).then(setQuotes).catch(() => setQuotes(undefined)); };
   const positions = summary?.positions ?? [];
   return <Stack gap="lg" className="dashboard">
     <Group justify="space-between" align="end" className="dashboard-title"><div><Text c="dimmed">Portafoglio privato</Text><Title order={2}>Panoramica</Title></div><Badge color={summary?.valuation_status === "available" ? "teal" : "yellow"}>{summary?.valuation_status === "available" ? "Quotazioni disponibili" : "Quotazioni mancanti"}</Badge></Group>
@@ -58,6 +61,7 @@ function Dashboard({ onOpenRegistry }: { onOpenRegistry: () => void }) {
     {!summary && !error ? <Group justify="center" py="xl"><Loader aria-label="Caricamento portafoglio" /></Group> : <><SimpleGrid cols={{ base: 1, xs: 2, md: 4 }} spacing="md"><Metric label="Valore portafoglio" value={amount(summary?.kpis.market_value_eur)} note={summary?.valuation_status === "available" ? "Ultima osservazione persistita" : "Quotazioni mancanti"} /><Metric label="Capitale aperto" value={amount(summary?.kpis.open_cost_eur)} note="Costo ricostruito dal ledger" /><Metric label="P&L realizzato" value={amount(summary?.kpis.realized_pnl_eur)} note="Vendite registrate" positive={Number(summary?.kpis.realized_pnl_eur) > 0} /><Metric label="P&L non realizzato" value={amount(summary?.kpis.unrealized_pnl_eur)} note="Disponibile con quotazioni EOD" positive={Number(summary?.kpis.unrealized_pnl_eur) > 0} /></SimpleGrid>
       <SimpleGrid cols={{ base: 1, md: 3 }} spacing="md"><Card withBorder radius="md" className="chart-card" style={{ gridColumn: "span 2" }}><Group justify="space-between"><Title order={3}>Valore nel tempo</Title><Group gap="xs"><Select aria-label="Intervallo grafico" size="xs" value={range} onChange={(value) => setRange(value || "Tutto")} data={["1M", "3M", "6M", "YTD", "1Y", "2Y", "Tutto"]} /><Badge variant="outline">EUR</Badge></Group></Group><PortfolioChart performance={performance} range={range} /><Text size="xs" c="dimmed">{performance?.methodology || "Serie non disponibile: servono osservazioni storiche valide."}</Text></Card><Card withBorder radius="md"><Title order={3}>Stato dati</Title><Stack mt="md" gap="sm"><Status label="Ledger" value={String(positions.length) + " strumenti"} /><Status label="Provider prezzi" value={summary?.valuation_status === "available" ? "Osservazioni persistite" : "Nessuna osservazione"} /><Status label="Worker EOD" value={workerHealth.status === "ok" ? `Attivo${workerHealth.provider === "disabled" ? " · provider disabilitato" : ""}` : workerHealth.status === "not_configured" ? "Non configurato" : "Non verificato"} /><Status label="Rendimento TWR" value={performance?.total_return == null ? "N/D" : new Intl.NumberFormat("it-IT", { style: "percent", maximumFractionDigits: 2 }).format(Number(performance.total_return))} /><Status label="Ultima quotazione" value={latestObservation(positions)} /></Stack></Card></SimpleGrid>
       <Card withBorder radius="md" className="chart-card"><Group justify="space-between"><Title order={3}>Rendimento vs benchmark</Title><Badge variant="outline">Base comune 0%</Badge></Group><BenchmarkChart performance={performance} range={range} /><Text size="xs" c="dimmed">I benchmark price-return escludono i dividendi: la comparabilità è indicata nella legenda.</Text></Card>
+      <Card withBorder radius="md"><Group justify="space-between" align="center"><Title order={3}>Quotazioni</Title><Select aria-label="Storico quotazioni" size="xs" value={quoteRange} onChange={changeQuoteRange} data={[{ value: "30", label: "1M" }, { value: "90", label: "3M" }, { value: "180", label: "6M" }, { value: "365", label: "1Y" }, { value: "3650", label: "Tutto" }]} /></Group><QuotesTable quotes={quotes} /></Card>
       <Card withBorder radius="md" className="positions"><Group justify="space-between"><Title order={3}>Posizioni</Title><Button variant="subtle" size="xs" onClick={onOpenRegistry}>Registro operazioni</Button></Group><PositionTable positions={positions} totalOpenCost={summary!.kpis.open_cost_eur} totalMarketValue={summary!.kpis.market_value_eur} /></Card></>}
   </Stack>;
 }
@@ -76,6 +80,20 @@ function latestObservation(positions: PortfolioSummary["positions"]): string {
   const values = positions.map((position) => position.last_observed_at).filter((value): value is string => value != null).sort();
   const latest = values[values.length - 1];
   return latest ? new Date(latest).toLocaleString("it-IT") : "Non disponibile";
+}
+
+function QuotesTable({ quotes }: { quotes?: QuotesSummary }) {
+  if (!quotes?.items?.length) return <Text c="dimmed" mt="md">Quotazioni non disponibili.</Text>;
+  return <Table.ScrollContainer minWidth={680}><Table mt="md" striped><Table.Thead><Table.Tr><Table.Th>Ticker</Table.Th><Table.Th>Ultimo</Table.Th><Table.Th>Variazione</Table.Th><Table.Th>Trend</Table.Th></Table.Tr></Table.Thead><Table.Tbody>{quotes.items.map((item) => <Table.Tr key={item.ticker}><Table.Td><Text fw={600}>{item.ticker}</Text><Text size="xs" c="dimmed">{new Date(item.observed_at).toLocaleString("it-IT")}</Text></Table.Td><Table.Td>{amount(item.price_eur)}</Table.Td><Table.Td c={item.change_percent == null ? "dimmed" : Number(item.change_percent) >= 0 ? "teal" : "red"}>{item.change_percent == null ? "N/D" : `${Number(item.change_percent).toLocaleString("it-IT", { maximumFractionDigits: 2 })}%`}</Table.Td><Table.Td><Sparkline points={item.points.map((point) => Number(point.price_eur))} label={`Trend ${item.ticker}`} /></Table.Td></Table.Tr>)}</Table.Tbody></Table></Table.ScrollContainer>;
+}
+
+function Sparkline({ points, label }: { points: number[]; label: string }) {
+  if (points.length < 2) return <Text size="xs" c="dimmed">N/D</Text>;
+  const min = Math.min(...points);
+  const max = Math.max(...points);
+  const span = max - min || 1;
+  const coordinates = points.map((point, index) => `${(index / (points.length - 1)) * 120},${26 - ((point - min) / span) * 22}`).join(" ");
+  return <svg className="quote-sparkline" viewBox="0 0 120 28" role="img" aria-label={label}><polyline points={coordinates} fill="none" vectorEffect="non-scaling-stroke" /></svg>;
 }
 
 function Operations() {
