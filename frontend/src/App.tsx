@@ -2,6 +2,7 @@ import { AppShell, Badge, Button, Card, Group, Loader, MantineProvider, Modal, N
 import { FormEvent, useEffect, useRef, useState } from "react";
 
 import { api, type InstrumentLookupResult, type LiveQuotesSummary, type Operation, type PerformanceSummary, type PortfolioSummary, type QuotesSummary, type WorkerHealth } from "./api";
+import packageJson from "../package.json";
 import "./styles.css";
 
 const euro = new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR", minimumFractionDigits: 2, maximumFractionDigits: 2, useGrouping: true });
@@ -43,7 +44,7 @@ export function App() {
   useEffect(() => { void api.authMode().then(({ bypass }) => { if (bypass) setAuthenticated(true); }).catch(() => undefined); }, []);
   if (!authenticated) return <MantineProvider defaultColorScheme="dark"><Login onAuthenticated={() => setAuthenticated(true)} /></MantineProvider>;
   return <MantineProvider defaultColorScheme="dark"><AppShell header={{ height: 64 }} padding="md" className="investix-shell">
-    <AppShell.Header px="md" py="sm" className="topbar"><Group justify="space-between"><Group gap="xs"><Title order={1} size="h3">Investix</Title><Badge color="cyan" variant="light">Privato</Badge></Group><Group gap="xs"><Button variant={page === "dashboard" ? "light" : "subtle"} size="xs" onClick={() => setPage("dashboard")}>Panoramica</Button><Button variant={page === "operations" ? "light" : "subtle"} size="xs" onClick={() => setPage("operations")}>Registro</Button></Group></Group></AppShell.Header>
+    <AppShell.Header px="md" py="sm" className="topbar"><Group justify="space-between"><Group gap="xs"><Title order={1} size="h3">Investix</Title><Badge color="cyan" variant="light">v{packageJson.version}</Badge></Group><Group gap="xs"><Button variant={page === "dashboard" ? "light" : "subtle"} size="xs" onClick={() => setPage("dashboard")}>Panoramica</Button><Button variant={page === "operations" ? "light" : "subtle"} size="xs" onClick={() => setPage("operations")}>Registro</Button></Group></Group></AppShell.Header>
     <AppShell.Main>{page === "dashboard" ? <Dashboard onOpenRegistry={() => setPage("operations")} /> : <Operations />}</AppShell.Main>
   </AppShell></MantineProvider>;
 }
