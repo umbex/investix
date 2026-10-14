@@ -62,6 +62,7 @@ describe("App", () => {
     const twrLabel = screen.getByText("Rendimento TWR");
     expect(quotesHeading).toBeInTheDocument();
     expect(screen.getByText(/1,23K€/)).toBeInTheDocument();
+    expect(screen.getAllByRole("textbox", { name: /Intervallo|Storico quotazioni/ })).toHaveLength(3);
     expect(twrLabel.compareDocumentPosition(quotesHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(quotesHeading.compareDocumentPosition(positionsHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(positionsHeading.compareDocumentPosition(valueHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();

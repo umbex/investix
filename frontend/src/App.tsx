@@ -19,6 +19,20 @@ const amount = (value: string | null | undefined) => value == null ? "N/D" : eur
 const kpiAmount = (value: string | null | undefined) => value == null ? "N/D" : `${kpiEuro.format(numericValue(value) / 1000)}K€`;
 const percent = (value: string | null | undefined) => value == null ? "N/D" : new Intl.NumberFormat("it-IT", { style: "percent", maximumFractionDigits: 1 }).format(Number(value));
 const chartText = "#b8c2d0";
+const RANGE_OPTIONS = ["1W", "1M", "3M", "6M", "YTD", "1Y", "2Y", "Tutto"];
+const rangeDays = (range: string) => {
+  if (range === "1W") return 7;
+  if (range === "1M") return 30;
+  if (range === "3M") return 90;
+  if (range === "6M") return 180;
+  if (range === "YTD") {
+    const now = new Date();
+    return Math.max(1, Math.ceil((now.getTime() - new Date(now.getFullYear(), 0, 1).getTime()) / 86400000));
+  }
+  if (range === "1Y") return 365;
+  if (range === "2Y") return 730;
+  return 3650;
+};
 
 export function App() {
   const [authenticated, setAuthenticated] = useState(false);
@@ -45,26 +59,26 @@ function Dashboard({ onOpenRegistry }: { onOpenRegistry: () => void }) {
   const [performance, setPerformance] = useState<PerformanceSummary>();
   const [workerHealth, setWorkerHealth] = useState<WorkerHealth>({ status: "unknown" });
   const [quotes, setQuotes] = useState<QuotesSummary>();
-  const [quoteRange, setQuoteRange] = useState("90");
+  const [quoteRange, setQuoteRange] = useState("3M");
   const [range, setRange] = useState("Tutto");
   const [ticker, setTicker] = useState("");
   const [account, setAccount] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [error, setError] = useState("");
-  const load = async (filter = ticker) => { setError(""); try { const nextSummary = await api.portfolio(filter || undefined, account || undefined); try { setPerformance(await api.performance(filter || undefined, dateFrom || undefined, dateTo || undefined)); } catch { setPerformance(undefined); } try { setWorkerHealth(await api.workerHealth()); } catch { setWorkerHealth({ status: "unknown" }); } try { setQuotes(await api.quotes(Number(quoteRange))); } catch { setQuotes(undefined); } setSummary(nextSummary); } catch (reason) { setError(reason instanceof Error ? reason.message : "Dati non disponibili"); } };
+  const load = async (filter = ticker) => { setError(""); try { const nextSummary = await api.portfolio(filter || undefined, account || undefined); try { setPerformance(await api.performance(filter || undefined, dateFrom || undefined, dateTo || undefined)); } catch { setPerformance(undefined); } try { setWorkerHealth(await api.workerHealth()); } catch { setWorkerHealth({ status: "unknown" }); } try { setQuotes(await api.quotes(rangeDays(quoteRange))); } catch { setQuotes(undefined); } setSummary(nextSummary); } catch (reason) { setError(reason instanceof Error ? reason.message : "Dati non disponibili"); } };
   useEffect(() => { void load(""); }, []);
-  const changeQuoteRange = (value: string | null) => { const nextRange = value || "90"; setQuoteRange(nextRange); void api.quotes(Number(nextRange)).then(setQuotes).catch(() => setQuotes(undefined)); };
+  const changeQuoteRange = (value: string | null) => { const nextRange = value || "3M"; setQuoteRange(nextRange); void api.quotes(rangeDays(nextRange)).then(setQuotes).catch(() => setQuotes(undefined)); };
   const positions = summary?.positions ?? [];
   return <Stack gap="lg" className="dashboard">
     <Group justify="space-between" align="end" className="dashboard-title"><div><Text c="dimmed">Portafoglio privato</Text><Title order={2}>Panoramica</Title></div><Badge color={summary?.valuation_status === "available" ? "teal" : "yellow"}>{summary?.valuation_status === "available" ? "Quotazioni disponibili" : "Quotazioni mancanti"}</Badge></Group>
     <Group className="filter-bar" align="end"><Select label="Ticker" placeholder="Tutti" clearable value={ticker || null} onChange={(value) => setTicker(value || "")} data={positions.map((position) => position.ticker)} /><Select label="Account" placeholder="Tutti" clearable value={account || null} onChange={(value) => setAccount(value || "")} data={Array.from(new Set(positions.flatMap((position) => position.accounts.map((item) => item.name)))).sort()} /><TextInput label="Da" type="date" value={dateFrom} onChange={(event) => setDateFrom(event.currentTarget.value)} /><TextInput label="A" type="date" value={dateTo} onChange={(event) => setDateTo(event.currentTarget.value)} /><Button onClick={() => void load()}>Applica</Button><Button variant="subtle" onClick={() => { setTicker(""); setAccount(""); setDateFrom(""); setDateTo(""); void load(""); }}>Azzera</Button></Group>
     {error && <Card withBorder><Text c="red">{error}</Text><Button mt="sm" size="xs" onClick={() => void load()}>Riprova</Button></Card>}
     {!summary && !error ? <Group justify="center" py="xl"><Loader aria-label="Caricamento portafoglio" /></Group> : <><SimpleGrid cols={{ base: 1, xs: 2, md: 5 }} spacing="md"><Metric label="Valore portafoglio" value={kpiAmount(summary?.kpis.market_value_eur)} note={summary?.valuation_status === "available" ? "Ultima osservazione persistita" : "Quotazioni mancanti"} /><Metric label="Capitale aperto" value={kpiAmount(summary?.kpis.open_cost_eur)} note="Costo ricostruito dal ledger" /><Metric label="P&L realizzato" value={kpiAmount(summary?.kpis.realized_pnl_eur)} note="Vendite registrate" positive={Number(summary?.kpis.realized_pnl_eur) > 0} /><Metric label="P&L non realizzato" value={kpiAmount(summary?.kpis.unrealized_pnl_eur)} note="Disponibile con quotazioni EOD" positive={Number(summary?.kpis.unrealized_pnl_eur) > 0} /><Metric label="Rendimento TWR" value={performance?.total_return == null ? "N/D" : new Intl.NumberFormat("it-IT", { style: "percent", maximumFractionDigits: 2 }).format(Number(performance.total_return))} note="Rendimento ponderato nel tempo" positive={Number(performance?.total_return) > 0} /></SimpleGrid>
-      <Card withBorder radius="md"><Group justify="space-between" align="center"><Title order={3}>Quotazioni</Title><Select aria-label="Storico quotazioni" size="xs" value={quoteRange} onChange={changeQuoteRange} data={[{ value: "30", label: "1M" }, { value: "90", label: "3M" }, { value: "180", label: "6M" }, { value: "365", label: "1Y" }, { value: "3650", label: "Tutto" }]} /></Group><QuotesTable quotes={quotes} /></Card>
+      <Card withBorder radius="md"><Group justify="space-between" align="center"><Title order={3}>Quotazioni</Title><Select aria-label="Storico quotazioni" size="xs" value={quoteRange} onChange={changeQuoteRange} data={RANGE_OPTIONS} /></Group><QuotesTable quotes={quotes} /></Card>
       <Card withBorder radius="md" className="positions"><Group justify="space-between"><Title order={3}>Posizioni</Title><Button variant="subtle" size="xs" onClick={onOpenRegistry}>Registro operazioni</Button></Group><PositionTable positions={positions} totalOpenCost={summary!.kpis.open_cost_eur} totalMarketValue={summary!.kpis.market_value_eur} /></Card>
-      <Card withBorder radius="md" className="chart-card"><Group justify="space-between"><Title order={3}>Valore nel tempo</Title><Group gap="xs"><Select aria-label="Intervallo grafico" size="xs" value={range} onChange={(value) => setRange(value || "Tutto")} data={["1M", "3M", "6M", "YTD", "1Y", "2Y", "Tutto"]} /><Badge variant="outline">EUR</Badge></Group></Group><PortfolioChart performance={performance} range={range} /><Text size="xs" c="dimmed">{performance?.methodology || "Serie non disponibile: servono osservazioni storiche valide."}</Text></Card>
-      <Card withBorder radius="md" className="chart-card"><Group justify="space-between"><Title order={3}>Rendimento vs benchmark</Title><Badge variant="outline">Base comune 0%</Badge></Group><BenchmarkChart performance={performance} range={range} /><Text size="xs" c="dimmed">I benchmark price-return escludono i dividendi: la comparabilità è indicata nella legenda.</Text></Card>
+      <Card withBorder radius="md" className="chart-card"><Group justify="space-between"><Title order={3}>Valore nel tempo</Title><Group gap="xs"><Select aria-label="Intervallo grafico" size="xs" value={range} onChange={(value) => setRange(value || "Tutto")} data={RANGE_OPTIONS} /><Badge variant="outline">EUR</Badge></Group></Group><PortfolioChart performance={performance} range={range} /><Text size="xs" c="dimmed">{performance?.methodology || "Serie non disponibile: servono osservazioni storiche valide."}</Text></Card>
+      <Card withBorder radius="md" className="chart-card"><Group justify="space-between"><Title order={3}>Rendimento vs benchmark</Title><Group gap="xs"><Select aria-label="Intervallo benchmark" size="xs" value={range} onChange={(value) => setRange(value || "Tutto")} data={RANGE_OPTIONS} /><Badge variant="outline">Base comune 0%</Badge></Group></Group><BenchmarkChart performance={performance} range={range} /><Text size="xs" c="dimmed">I benchmark price-return escludono i dividendi: la comparabilità è indicata nella legenda.</Text></Card>
       <Card withBorder radius="md"><Title order={3}>Stato dati</Title><Stack mt="md" gap="sm"><Status label="Ledger" value={String(positions.length) + " strumenti"} /><Status label="Provider prezzi" value={summary?.valuation_status === "available" ? "Osservazioni persistite" : "Nessuna osservazione"} /><Status label="Worker EOD" value={workerHealth.status === "ok" ? `Attivo${workerHealth.provider === "disabled" ? " · provider disabilitato" : ""}` : workerHealth.status === "not_configured" ? "Non configurato" : "Non verificato"} /><Status label="Ultima quotazione" value={latestObservation(positions)} /></Stack></Card></>}
   </Stack>;
 }
@@ -141,6 +155,6 @@ function withinRange<T extends { date: string }>(points: T[], range: string): T[
   if (!points.length || range === "Tutto") return points;
   const end = new Date(points.at(-1)!.date);
   const start = new Date(end);
-  if (range === "YTD") start.setMonth(0, 1); else start.setMonth(start.getMonth() - Number(range.replace("M", "").replace("Y", "")) * (range.endsWith("Y") ? 12 : 1));
+  if (range === "YTD") start.setMonth(0, 1); else if (range === "1W") start.setDate(start.getDate() - 7); else start.setMonth(start.getMonth() - Number(range.replace("M", "").replace("Y", "")) * (range.endsWith("Y") ? 12 : 1));
   return points.filter((point) => new Date(point.date) >= start);
 }
