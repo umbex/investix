@@ -53,7 +53,7 @@ describe("App", () => {
     fireEvent.change(screen.getByLabelText(/Password/), { target: { value: "password" } });
     fireEvent.click(screen.getByRole("button", { name: "Accedi" }));
 
-    await waitFor(() => expect(screen.getByRole("heading", { name: "Panoramica" })).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole("heading", { name: "Quotazioni" })).toBeInTheDocument());
     const quotesHeading = screen.getByRole("heading", { name: "Quotazioni" });
     const positionsHeading = screen.getByRole("heading", { name: "Posizioni" });
     const valueHeading = screen.getByRole("heading", { name: "Valore nel tempo" });
@@ -92,7 +92,7 @@ describe("App", () => {
     vi.stubGlobal("fetch", fetchMock);
     render(<App />);
 
-    await waitFor(() => expect(screen.getByRole("heading", { name: "Panoramica" })).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole("heading", { name: "Quotazioni" })).toBeInTheDocument());
     fireEvent.click(screen.getByRole("button", { name: "Registro" }));
 
     expect(await screen.findByRole("button", { name: "Modifica" })).toBeInTheDocument();
