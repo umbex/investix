@@ -25,7 +25,7 @@ services:
       INVESTIX_DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-investix}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@db:5432/${POSTGRES_DB:-investix}
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000
     ports:
-      - "127.0.0.1:8000:8000"
+      - "0.0.0.0:8000:8000"
 
   worker:
     build: ./backend
@@ -45,7 +45,7 @@ services:
       api:
         condition: service_started
     ports:
-      - "127.0.0.1:5173:5173"
+      - "0.0.0.0:5173:5173"
 
 volumes:
   investix-postgres:
